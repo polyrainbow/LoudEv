@@ -144,7 +144,6 @@ function renderRMS(wavesurfer){
 				console.log('Message received from worker');
 				console.log(data);
 				
-				dom.remove(g("loudness_progress"));
 				g("conducting_loudness_analysis").style.display = "none";
 				
 				loudness = data.loudness;
@@ -159,7 +158,6 @@ function renderRMS(wavesurfer){
 			
 			if (data.type == "progress"){
 				
-				g("loudness_progress").value = data.progress;
 				g("progress_value_disp").innerHTML = data.progress;
 				
 			}
