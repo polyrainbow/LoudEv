@@ -54,6 +54,26 @@ function msInDBFS(value){
 }
 
 
+function getAbsMaxOfArray(numArray){
+
+  //return Math.max.apply(null, numArray);
+  //this will result in "Uncaught RangeError: Maximum call stack size exceeded"
+  
+  var max_pos = 0;
+  
+  for (var i=1; i < numArray.length; i++){
+  
+	if (Math.abs(numArray[i]) > Math.abs(numArray[max_pos])){
+		max_pos = i;
+	}
+  
+  }
+  
+  return Math.abs(numArray[max_pos]);
+
+}
+
+
 function getMaxOfArray(numArray) {
   //return Math.max.apply(null, numArray);
   //this will result in "Uncaught RangeError: Maximum call stack size exceeded"
@@ -155,7 +175,7 @@ function getPSRAtSamplePosition(buffers, samplePos, loudness_value){
 	
 	}
 	
-	var x_peak = getMaxOfArray(samples);
+	var x_peak = getAbsMaxOfArray(samples);
 	
 	var x_peak_db = absoluteValueToDBFS(x_peak);
 	

@@ -94,6 +94,66 @@ function getCrestFactorAtRelativePosition(buffers, relativePos){
 }
 
 
+//this method does not work, because of the way, oversampling in chrome works
+function startTruePeakMeasurement(buffer48kHz){
+
+	var leftChannel48kHz = buffer48kHz.getChannelData(0);
+
+	//oversample to 192 kHz
+	
+
+	
+	
+	//get a resampled audioBuffer
+	var lengthInSeconds = leftChannel48kHz.length / 48000;
+	var targetSampleRate = 192000;
+	var OAC = new OfflineAudioContext(2, lengthInSeconds * targetSampleRate, targetSampleRate);
+	var source = OAC.createBufferSource();
+	source.buffer = buffer48kHz;
+	
+	//create gain node for attenuation
+	var gain = OAC.createGain();
+	gain.gain.value = 0.5;
+	
+	source.connect(gain);
+	gain.connect(OAC.destination);
+	source.start();
+
+  
+	OAC.startRendering().then(function(renderedBuffer) {
+	
+		console.log('Rendering completed successfully');
+		console.log('Now we have a buffer in 192000, required for EBU analysis');
+		//renderAndDownloadWAV(renderedBuffer);
+		var leftChannel192kHz = renderedBuffer.getChannelData(0);
+		var rightChannel192kHz = renderedBuffer.getChannelData(1);
+		
+		var myWorker = new Worker("js/true-peak-worker.js");
+		myWorker.postMessage({buffer: [leftChannel192kHz, rightChannel192kHz]}); // Sending message as an array to the worker
+		console.log('Data to analyse posted to worker');
+		console.log(leftChannel192kHz);
+	
+		myWorker.onmessage = function(e) {
+			
+			var data = e.data;
+			
+			if (data.type == "finished"){
+				
+				console.log('Message received from true-peak-worker');
+				console.log(data);
+				
+				var max_tp = data.max;
+				
+			}
+			
+			
+		};
+
+	});
+
+}
+
+
 function renderRMS(wavesurfer){
 
 	loudness_canvas = dom.make("canvas", "loudness_canvas", "", g("loudness_div"));
@@ -129,6 +189,8 @@ function renderRMS(wavesurfer){
 		var leftChannel48kHz = renderedBuffer.getChannelData(0);
 		var rightChannel48kHz = renderedBuffer.getChannelData(1);
 		
+		//does not work
+		//startTruePeakMeasurement(renderedBuffer);
 	
 		var myWorker = new Worker("js/loudness-worker.js");
 		myWorker.postMessage({buffer: [leftChannel48kHz, rightChannel48kHz], width: canvas_width}); // Sending message as an array to the worker
