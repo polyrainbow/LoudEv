@@ -108,6 +108,10 @@ function getShortTermLoudnessAtSamplePosition(buffers, pos){
 		
 		channel_loudness_values[c] = ebuPreFilter(samplesForCalculation);
 		
+		/*
+			No channel weigthing applied here, as we're currently only evaluation mono/stereo files with L=1.0 and R=1.0
+		*/
+		
 		loudness += channel_loudness_values[c];
 		
 	}
