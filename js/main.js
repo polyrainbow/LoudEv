@@ -104,15 +104,6 @@ function renderRMS(wavesurfer){
 	psr_canvas.style.width = "100%";
 	psr_canvas.style.height = "150px";
 
-	var loudness_progress = dom.make("progress", "loudness_progress", "", g("loudness_div"));
-	loudness_progress.style.width = "100%";
-	loudness_progress.style.height = "80px";
-	loudness_progress.style.backgroundColor = "blue";
-	loudness_progress.min = "0";
-	loudness_progress.max = "100";
-	loudness_progress.step = "1";
-	loudness_progress.value = "0";
-
 	var canvas_width = loudness_canvas.getBoundingClientRect().width * 2;
 	var canvas_height = loudness_canvas.getBoundingClientRect().height * 2;
 
@@ -139,7 +130,7 @@ function renderRMS(wavesurfer){
 		var rightChannel48kHz = renderedBuffer.getChannelData(1);
 		
 	
-		var myWorker = new Worker("loudness-worker.js");
+		var myWorker = new Worker("js/loudness-worker.js");
 		myWorker.postMessage({buffer: [leftChannel48kHz, rightChannel48kHz], width: canvas_width}); // Sending message as an array to the worker
 		console.log('Data to analyse posted to worker');
 
@@ -347,7 +338,7 @@ var renderAndDownloadWAV = function(buffer){
 
 		// start a new worker 
 		// we can't use Recorder directly, since it doesn't support what we're trying to do
-		var worker = new Worker("recorderWorker.js");
+		var worker = new Worker("js/recorderWorker.js");
 
 		// initialize the new worker
 		worker.postMessage({

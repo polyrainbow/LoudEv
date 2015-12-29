@@ -21,36 +21,35 @@
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   <link rel="stylesheet" href="css/normalize.css">
   <link rel="stylesheet" href="css/skeleton.css">
+  <link rel="stylesheet" href="css/main.css">  
 
   <!-- Favicon
   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  		<link rel="apple-touch-icon" sizes="57x57" href="apple-touch-icon-57x57.png">
-		<link rel="apple-touch-icon" sizes="60x60" href="apple-touch-icon-60x60.png">
-		<link rel="apple-touch-icon" sizes="72x72" href="apple-touch-icon-72x72.png">
-		<link rel="apple-touch-icon" sizes="76x76" href="apple-touch-icon-76x76.png">
-		<link rel="apple-touch-icon" sizes="114x114" href="apple-touch-icon-114x114.png">
-		<link rel="apple-touch-icon" sizes="120x120" href="apple-touch-icon-120x120.png">
-		<link rel="apple-touch-icon" sizes="144x144" href="apple-touch-icon-144x144.png">
-		<link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152x152.png">
-		<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png">
-		<link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32">
-		<link rel="icon" type="image/png" href="android-chrome-192x192.png" sizes="192x192">
-		<link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96">
-		<link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16">
+  		<link rel="apple-touch-icon" sizes="57x57" href="icons/apple-touch-icon-57x57.png">
+		<link rel="apple-touch-icon" sizes="60x60" href="icons/apple-touch-icon-60x60.png">
+		<link rel="apple-touch-icon" sizes="72x72" href="icons/apple-touch-icon-72x72.png">
+		<link rel="apple-touch-icon" sizes="76x76" href="icons/apple-touch-icon-76x76.png">
+		<link rel="apple-touch-icon" sizes="114x114" href="icons/apple-touch-icon-114x114.png">
+		<link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120x120.png">
+		<link rel="apple-touch-icon" sizes="144x144" href="icons/apple-touch-icon-144x144.png">
+		<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152x152.png">
+		<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180x180.png">
+		<link rel="icon" type="image/png" href="icons/favicon-32x32.png" sizes="32x32">
+		<link rel="icon" type="image/png" href="icons/android-chrome-192x192.png" sizes="192x192">
+		<link rel="icon" type="image/png" href="icons/favicon-96x96.png" sizes="96x96">
+		<link rel="icon" type="image/png" href="icons/favicon-16x16.png" sizes="16x16">
 		<link rel="manifest" href="manifest.json">
 		<meta name="msapplication-TileColor" content="#2b5797">
-		<meta name="msapplication-TileImage" content="mstile-144x144.png">
+		<meta name="msapplication-TileImage" content="icons/mstile-144x144.png">
 		<meta name="theme-color" content="#ffffff">
   
   
-	<script src="helpers.js"></script>
-	<script src="dom.js"></script>
-	<script src="wavesurfer.min.js"></script>
-	<script src="FileSaver.js"></script>
+	<script src="js/helpers.js"></script>
+	<script src="js/dom.js"></script>
+	<script src="js/wavesurfer.min.js"></script>
+	<script src="js/FileSaver.js"></script>
 
-	<script src="mdl/material.min.js"></script>
-
-	<script src="main.js"></script>
+	<script src="js/main.js"></script>
 
 
 </head>
@@ -81,34 +80,38 @@
 				<span id="progress_value_disp">0</span>%</h2>
 			</div>
 			
-			<div id="loudness_div"></div>	
+			<div id="loudness_div"></div>
 			
-			
-			<div>
-			
-				<span id="rms_db_display"></span>
-			
-			</div>
-			
-			<div id="psr_div">
-				<canvas id="psr_canvas" style="width:100%; height: 150px;"></canvas>
-			</div>	
-			
-			<div>
-			
-				<span id="psr_db_display"></span>
-			
-			</div>
+			<div id="psr_div"></div>	
 			
 			<div>
 				<p>
-					Short-term loudness: <span id="loudness_display"></span><br>
-					Peak to short-term loudness: <span id="psr_display"></span>
+					<span class="display_label">Short-term loudness</span><br>
+					<span class="number_display" id="loudness_display"></span><br>
+					<span class="display_label">Peak to short-term loudness</span><br>
+					<span class="number_display" id="psr_display"></span>
 				</p>
 			
 			</div>
 			
-			<img src="apple-touch-icon-120x120.png" alt="Web Audio Tech">		
+			
+			  <div class="row" id="footer" style="border-top: 1px solid #eee;">
+				<div class="four columns"><p>An experiment by<br>
+					<img src="img/wat_logo_transparent.png" style="width: 50%; padding: 15px;"></p>			
+				</div>
+				<div class="four columns">
+				<p>This app implements short-term loudness metering according to <a href="https://tech.ebu.ch/loudness">EBU R 128</a>.<br>
+					<a href="https://tech.ebu.ch/loudness"><img src="img/ebu_logo_128.png" style="width: 50%; padding: 15px;"></a></p>
+				
+				</div>
+				<div class="four columns">
+				<p>This app is open-source. <a href="https://github.com/SebastianZimmer/LoudEv">Check it out on GitHub</a>.<br>
+				<a href="https://github.com/SebastianZimmer/LoudEv"><img src="img/GitHub-Mark-120px-plus.png"></a><br>
+				You are invited to contribute.</p>
+				</div>			
+			  </div>
+			
+			
   </div>
 
 <!-- End Document
