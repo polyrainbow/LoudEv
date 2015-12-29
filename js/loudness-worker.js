@@ -76,30 +76,41 @@ function getMaxOfArray(numArray) {
 function getShortTermLoudnessAtSamplePosition(buffers, pos){
 
 	var time_frame = 3; //seconds
+	var samplesCount = Math.round(48000 * time_frame);
 
-	//samples count of last 300ms, with sampleRate of 44100 Samples/sec = 13230
-	var samplesCount = Math.round(44100 * time_frame);
-
-	var samplesForCalculation = new Float32Array(samplesCount);
-	var i = 0;
+	//for every channel one loudness value
+	var channel_loudness_values = new Float32Array(buffers.length);
 	
-	for (var s = pos - samplesCount; s <= pos; s++){
+	//master loudness
+	var loudness = 0;
 	
-		if (s >= 0){
-			//we just use the left channel for now!
-			samplesForCalculation[i] = buffers[0][s];
+	//calculate loudness for each channel
+	for (var c = 0; c < buffers.length; c++){
+	
+		var samplesForCalculation = new Float32Array(samplesCount);
+		var i = 0;
+		
+		for (var s = pos - samplesCount; s <= pos; s++){
+		
+			if (s >= 0){
 
+				samplesForCalculation[i] = buffers[c][s];
+
+			}
+		
+			else {
+				samplesForCalculation[i] = 0;
+			}
+		
+			i++;
+			
 		}
-	
-		else {
-			samplesForCalculation[i] = 0;
-		}
-	
-		i++;
+		
+		channel_loudness_values[c] = ebuPreFilter(samplesForCalculation);
+		
+		loudness += channel_loudness_values[c];
 		
 	}
-	
-	var loudness = ebuPreFilter(samplesForCalculation);
 	
 	var l_db = msInDBFS(loudness);
 	
@@ -112,29 +123,32 @@ function getShortTermLoudnessAtSamplePosition(buffers, pos){
 function getPSRAtSamplePosition(buffers, samplePos, loudness_value){
 
 	var time_frame = 3; //seconds
-
-	//samples count of last 300ms, with sampleRate of 44100 Samples/sec = 13230
-	var samplesCount = Math.round(44100 * time_frame);
+	var samplesCount = Math.round(48000 * time_frame);
 
 	var length = buffers[0].length;
 
-	var samples = new Float32Array(samplesCount);
+	//put all samples of all channels in one array
+	var samples = new Float32Array(buffers.length * samplesCount);
 	var i = 0;
 	
-	for (var s = samplePos - samplesCount; s <= samplePos; s++){
+	for (var c = 0; c < buffers.length; c++){
 	
-		if (s >= 0){
-			//currently only use left channel
-			samples[i] = buffers[0][s];
-
-		}
-	
-		else {
-			samples[i] = 0;
-		}
-	
-		i++;
+		for (var s = samplePos - samplesCount; s <= samplePos; s++){
 		
+			if (s >= 0){
+
+				samples[i] = buffers[c][s];
+
+			}
+		
+			else {
+				samples[i] = 0;
+			}
+		
+			i++;
+			
+		}
+	
 	}
 	
 	var x_peak = getMaxOfArray(samples);
