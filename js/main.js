@@ -168,7 +168,7 @@ function renderRMS(wavesurfer){
 	var canvas_height = loudness_canvas.getBoundingClientRect().height * 2;
 
 	var leftChannel = wavesurfer.backend.buffer.getChannelData(0);
-	var rightChannel = wavesurfer.backend.buffer.getChannelData(1);
+	//var rightChannel = wavesurfer.backend.buffer.getChannelData(1);
 	
 	
 	//get a resampled audioBuffer
