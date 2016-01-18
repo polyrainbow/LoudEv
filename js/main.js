@@ -177,9 +177,46 @@ function renderRMS(wavesurfer){
 	var OAC = new OfflineAudioContext(2, lengthInSeconds * targetSampleRate, targetSampleRate);
 	var source = OAC.createBufferSource();
 	source.buffer = wavesurfer.backend.buffer;
-	source.connect(OAC.destination);
+	
+	
+	//spherical head filter
+	
+	//feedforward coeffs b
+	var shf_ff_c = new Float32Array(3);
+	shf_ff_c[0] = 1.53512485958697;
+	shf_ff_c[1] = -2.69169618940638;
+	shf_ff_c[2] = 1.19839281085285;
+	
+	//feedback coeffs a
+	var shf_fb_c = new Float32Array(3);
+	shf_fb_c[0] = 1.0;
+	shf_fb_c[1] = -1.69065929318241;
+	shf_fb_c[2] = 0.73248077421585;	
+	
+	var sphericalHeadFilter = OAC.createIIRFilter(shf_ff_c, shf_fb_c);
+	source.connect(sphericalHeadFilter);
+	
+	
+	//highpass filter
+	
+	//feedforward coeffs b
+	var hpf_ff_c = new Float32Array(3);
+	hpf_ff_c[0] = 1.0;
+	hpf_ff_c[1] = -2.0;
+	hpf_ff_c[2] = 1.0;
+	
+	//feedback coeffs a
+	var hpf_fb_c = new Float32Array(3);
+	hpf_fb_c[0] = 1.0;
+	hpf_fb_c[1] = -1.99004745483398;
+	hpf_fb_c[2] = 0.99007225036621;	
+	
+	var highPassFilter = OAC.createIIRFilter(hpf_ff_c, hpf_fb_c);
+	sphericalHeadFilter.connect(highPassFilter);
+	
+	highPassFilter.connect(OAC.destination);
+	
 	source.start();
-	//OAC.oncomplete = function(audioBufferResampled){
   
 	OAC.startRendering().then(function(renderedBuffer) {
 	
@@ -191,7 +228,8 @@ function renderRMS(wavesurfer){
 		
 		//does not work
 		//startTruePeakMeasurement(renderedBuffer);
-	
+		
+		
 		var myWorker = new Worker("js/loudness-worker.js");
 		myWorker.postMessage({buffer: [leftChannel48kHz, rightChannel48kHz], width: canvas_width}); // Sending message as an array to the worker
 		console.log('Data to analyse posted to worker');
@@ -226,6 +264,7 @@ function renderRMS(wavesurfer){
 			
 			
 		};
+		
 		
 	});
 	

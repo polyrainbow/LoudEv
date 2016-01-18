@@ -189,7 +189,7 @@ function getPSRAtSamplePosition(buffers, samplePos, loudness_value){
 
 function ebuPreFilter(samples){
 
-	return ms(highPassFilter(sphericalHeadFilter(samples)));
+	return ms(/*highPassFilter(sphericalHeadFilter(*/samples/*))*/);
 
 }
 
