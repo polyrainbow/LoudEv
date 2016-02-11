@@ -362,7 +362,13 @@ var getPSRAtPosition = function(pos){
 
 var refreshIndicators = function(time){
 	
-	loudness_display.innerHTML = getLoudnessAtPosition(time) + " LUFS";
-	psr_display.innerHTML = getPSRAtPosition(time) + " LU";
+	var loudness = getLoudnessAtPosition(time).toString();
+	if (loudness.indexOf(".") == -1) loudness = loudness + ".0";
+	
+	var psr = getPSRAtPosition(time).toString();
+	if (psr.indexOf(".") == -1) psr = psr + ".0";
+	
+	loudness_display.innerHTML = loudness + " LUFS";
+	psr_display.innerHTML = psr + " LU";
 	
 }
