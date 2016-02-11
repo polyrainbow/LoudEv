@@ -10,150 +10,6 @@ var loudness_display = null;
 var psr_display = null;
 
 
-function getRMSAtRelativePosition(buffer, relativePos){
-
-	//samples count of last 300ms, with sampleRate of 44100 Samples/sec = 13230
-	var samplesCountOfLast300ms = Math.round(wavesurfer.backend.ac.sampleRate);
-
-	var length = buffer.length;
-
-	var absoluteSamplePos = Math.round(relativePos * buffer.length);
-	
-	
-	var ms = 0;
-	for (var s = absoluteSamplePos - samplesCountOfLast300ms; s <= absoluteSamplePos; s++){
-	
-		if (s >= 0){
-			ms += Math.pow(buffer[s], 2);
-		}
-	
-		else {
-			continue;
-		}
-	
-	}
-	
-	ms = (1 / samplesCountOfLast300ms) * ms;
-	
-	var rms = Math.sqrt(ms);
-	
-	return rms;
-
-}
-
-
-function absInDBFS(value){
-
-	return 20 * Math.log10(Math.abs(value));	
-
-}
-
-function getMaxOfArray(numArray) {
-  return Math.max.apply(null, numArray);
-}
-
-
-function getCrestFactorAtRelativePosition(buffers, relativePos){
-
-	//samples count of last 300ms, with sampleRate of 44100 Samples/sec = 13230
-	var samplesCountOfLast300ms = Math.round(wavesurfer.backend.ac.sampleRate);
-
-	var length = buffers[0].length;
-
-	var absoluteSamplePos = Math.round(relativePos * length);
-	
-	var samples = new Float32Array(samplesCountOfLast300ms);
-	var i = 0;
-	
-	for (var s = absoluteSamplePos - samplesCountOfLast300ms; s <= absoluteSamplePos; s++){
-	
-		if (s >= 0){
-			//currently only use left channel
-			samples[i] = buffers[0][s];
-
-		}
-	
-		else {
-			samples[i] = 0;
-		}
-	
-		i++;
-		
-	}
-	
-	var x_peak = getMaxOfArray(samples);
-	
-
-	var rms = getRMSAtRelativePosition(buffer, relativePos);
-	
-	var c = x_peak / rms;
-	
-	return c;
-
-
-}
-
-
-//this method does not work, because of the way, oversampling in chrome works
-function startTruePeakMeasurement(buffer48kHz){
-
-	var leftChannel48kHz = buffer48kHz.getChannelData(0);
-
-	//oversample to 192 kHz
-	
-
-	
-	
-	//get a resampled audioBuffer
-	var lengthInSeconds = leftChannel48kHz.length / 48000;
-	var targetSampleRate = 192000;
-	var OAC = new OfflineAudioContext(2, lengthInSeconds * targetSampleRate, targetSampleRate);
-	var source = OAC.createBufferSource();
-	source.buffer = buffer48kHz;
-	
-	//create gain node for attenuation
-	var gain = OAC.createGain();
-	gain.gain.value = 0.5;
-	
-	source.connect(gain);
-	gain.connect(OAC.destination);
-	source.start();
-
-  
-	OAC.startRendering().then(function(renderedBuffer) {
-	
-		console.log('Rendering completed successfully');
-		console.log('Now we have a buffer in 192000, required for EBU analysis');
-		//renderAndDownloadWAV(renderedBuffer);
-		var leftChannel192kHz = renderedBuffer.getChannelData(0);
-		var rightChannel192kHz = renderedBuffer.getChannelData(1);
-		
-		var myWorker = new Worker("js/true-peak-worker.js");
-		myWorker.postMessage({buffer: [leftChannel192kHz, rightChannel192kHz]}); // Sending message as an array to the worker
-		console.log('Data to analyse posted to worker');
-		console.log(leftChannel192kHz);
-	
-		myWorker.onmessage = function(e) {
-			
-			var data = e.data;
-			
-			if (data.type == "finished"){
-				
-				console.log('Message received from true-peak-worker');
-				console.log(data);
-				
-				var max_tp = data.max;
-				
-			}
-			
-			
-		};
-
-	});
-
-}
-
-
 function renderRMS(wavesurfer){
 
 	loudness_canvas = dom.make("canvas", "loudness_canvas", "", g("loudness_div"));
@@ -167,9 +23,7 @@ function renderRMS(wavesurfer){
 	var canvas_width = loudness_canvas.getBoundingClientRect().width * 2;
 	var canvas_height = loudness_canvas.getBoundingClientRect().height * 2;
 
-	var leftChannel = wavesurfer.backend.buffer.getChannelData(0);
-	//var rightChannel = wavesurfer.backend.buffer.getChannelData(1);
-	
+	var leftChannel = wavesurfer.backend.buffer.getChannelData(0);	
 	
 	//get a resampled audioBuffer
 	var lengthInSeconds = leftChannel.length / wavesurfer.backend.ac.sampleRate;
@@ -185,13 +39,10 @@ function renderRMS(wavesurfer){
 	
 		console.log('Rendering completed successfully');
 		console.log('Now we have a buffer in 48000, required for EBU analysis');
-			
+
 		var leftChannel48kHz = renderedBuffer.getChannelData(0);
 		var rightChannel48kHz = renderedBuffer.getChannelData(1);
 		
-		//does not work
-		//startTruePeakMeasurement(renderedBuffer);
-	
 		var myWorker = new Worker("js/loudness-worker.js");
 		myWorker.postMessage({buffer: [leftChannel48kHz, rightChannel48kHz], width: canvas_width}); // Sending message as an array to the worker
 		console.log('Data to analyse posted to worker');
@@ -379,12 +230,12 @@ var renderOACAndDownloadWAV = function(OAC){
 
 var renderAndDownloadWAV = function(buffer){
 
-			renderWAVFileFromAudioBuffer(buffer, function(blob){
-				
-				saveAs(blob, "export.wav");
-				
-			});
-			
+	renderWAVFileFromAudioBuffer(buffer, function(blob){
+
+		saveAs(blob, "export.wav");
+
+	});
+	
 }
 
 
@@ -394,7 +245,6 @@ var renderAndDownloadWAV = function(buffer){
 		log(buffer);
 		
 		// assuming a var named `buffer` exists and is an AudioBuffer instance
-
 
 		// start a new worker 
 		// we can't use Recorder directly, since it doesn't support what we're trying to do
@@ -440,7 +290,6 @@ var renderAndDownloadWAV = function(buffer){
 		});
 	
 	
-	
 	};
 
 
@@ -474,24 +323,6 @@ document.addEventListener("DOMContentLoaded", function(){
 	
 	var display = g("rms_db_display");
 	
-	
-	//Not needed as files are not fetched via XHR
-	/*
-	wavesurfer.on('loading', function(percent){
-	
-		g("wave_progress").value = percent;
-		
-		if (percent == 100){
-			
-			dom.remove(g("wave_progress"));
-			
-		}
-	
-	});
-	*/
-	
-	
-	
 	wavesurfer.on('audioprocess', function(){
 		
 		var position = wavesurfer.getCurrentTime() / wavesurfer.getDuration();
@@ -499,7 +330,6 @@ document.addEventListener("DOMContentLoaded", function(){
 		refreshIndicators(position);
 		
 	});
-	
 	
 
 	g('file_input').addEventListener('change', function(evt){
@@ -515,8 +345,6 @@ document.addEventListener("DOMContentLoaded", function(){
 	}, false);
 	
 });
-
-
 
 
 var getLoudnessAtPosition = function(pos){

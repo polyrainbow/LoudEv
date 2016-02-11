@@ -1,42 +1,42 @@
-﻿
-
-onmessage = function(e) {
+﻿onmessage = function(e) {
 	
-  var progress_percent = 0;
-  var progress_percent_old = 0;
+	var progress_percent = 0;
+	var progress_percent_old = 0;
+	var buffers = e.data.buffer;
+  
+	var width = e.data.width;
+  
+	var loudness = new Float32Array(width);
+	var psr = new Float32Array(width);
 
-  var buffers = e.data.buffer;
+	console.log("Starting with analysing loudness");
   
-  var width = e.data.width;
-  
-  var loudness = new Float32Array(width);
-  var psr = new Float32Array(width);
-
-  console.log("Starting with analysing loudness");
-  
-  //calculate short term loudness for every pixel
-  for (var i = 0; i < width; i++){
-	var absoluteSamplePos = Math.round(i/width * buffers[0].length);
-    loudness[i] = getShortTermLoudnessAtSamplePosition(buffers, absoluteSamplePos);
-	psr[i] = getPSRAtSamplePosition(buffers, absoluteSamplePos, loudness[i]);
+	//calculate a short term loudness value for each "pixel" of canvas
+	for (var i = 0; i < width; i++){
+		
+		var absoluteSamplePos = Math.round(i/width * buffers[0].length);
+		loudness[i] = getShortTermLoudnessAtSamplePosition(buffers, absoluteSamplePos);
+		psr[i] = getPSRAtSamplePosition(buffers, absoluteSamplePos, loudness[i]);
 	
-	progress_percent = Math.round(i/width * 100);
+		progress_percent = Math.round(i/width * 100);
 	
-	if (progress_percent != progress_percent_old){
-		postMessage({type: "progress", progress: progress_percent});
-		progress_percent_old = progress_percent;	
+		if (progress_percent != progress_percent_old){
+			postMessage({type: "progress", progress: progress_percent});
+			progress_percent_old = progress_percent;	
+		}
+	
 	}
-	
-  }
 
   
-  var response = {
-	type: "finished",
-	loudness: loudness,
-	psr: psr
-  }
+	var response = {
+	  
+		type: "finished",
+		loudness: loudness,
+		psr: psr
+	
+	}
   
-  postMessage(response);
+	postMessage(response);
   
 }
 
@@ -59,17 +59,17 @@ function getAbsMaxOfArray(numArray){
   //return Math.max.apply(null, numArray);
   //this will result in "Uncaught RangeError: Maximum call stack size exceeded"
   
-  var max_pos = 0;
+	var max_pos = 0;
   
-  for (var i=1; i < numArray.length; i++){
+	for (var i=1; i < numArray.length; i++){
   
-	if (Math.abs(numArray[i]) > Math.abs(numArray[max_pos])){
-		max_pos = i;
+		if (Math.abs(numArray[i]) > Math.abs(numArray[max_pos])){
+			max_pos = i;
+		}
+  
 	}
   
-  }
-  
-  return Math.abs(numArray[max_pos]);
+	return Math.abs(numArray[max_pos]);
 
 }
 
@@ -78,23 +78,26 @@ function getMaxOfArray(numArray) {
   //return Math.max.apply(null, numArray);
   //this will result in "Uncaught RangeError: Maximum call stack size exceeded"
   
-  var max_pos = 0;
+	var max_pos = 0;
   
-  for (var i=1; i < numArray.length; i++){
+	for (var i=1; i < numArray.length; i++){
   
-	if (numArray[i] > numArray[max_pos]){
-		max_pos = i;
+		if (numArray[i] > numArray[max_pos]){
+			max_pos = i;
+		}
+  
 	}
   
-  }
-  
-  return numArray[max_pos];
+	return numArray[max_pos];
   
 }
 
 
 function getShortTermLoudnessAtSamplePosition(buffers, pos){
 
+	// From EBU TECH 3341:
+	// The short-term loudness uses a sliding rectangular time window of length 3 s. The
+	// measurement is not gated. The update rate for ‘live meters’ shall be at least 10 Hz.
 	var time_frame = 3; //seconds
 	var samplesCount = Math.round(48000 * time_frame);
 
@@ -139,7 +142,6 @@ function getShortTermLoudnessAtSamplePosition(buffers, pos){
 	var l_db = msInDBFS(loudness);
 	
 	return l_db;
-
 
 }
 
@@ -274,6 +276,7 @@ function ms(samples){
 	return ms;
 	
 }
+
 
 function sumSignals(signal1, signal2){
 
