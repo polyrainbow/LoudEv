@@ -61,7 +61,7 @@ function getAbsMaxOfArray(numArray){
   
 	var max_pos = 0;
   
-	for (var i=1; i < numArray.length; i++){
+	for (var i = 1; i < numArray.length; i++){
   
 		if (Math.abs(numArray[i]) > Math.abs(numArray[max_pos])){
 			max_pos = i;
@@ -139,7 +139,8 @@ function getShortTermLoudnessAtSamplePosition(buffers, pos){
 		
 	}
 	
-	var l_db = msInDBFS(loudness);
+	//multiply the loudness with 2 to get from 50% to 100% gain again
+	var l_db = msInDBFS(2 * loudness);
 	
 	return l_db;
 
@@ -177,14 +178,14 @@ function getPSRAtSamplePosition(buffers, samplePos, loudness_value){
 	
 	}
 	
-	var x_peak = getAbsMaxOfArray(samples);
+	//multiply the max with 2 to get from 50% to 100% gain again
+	var x_peak = getAbsMaxOfArray(samples) * 2;
 	
 	var x_peak_db = absoluteValueToDBFS(x_peak);
 	
-	var c = x_peak_db - loudness_value;
+	var psr = x_peak_db - loudness_value;
 	
-	return c;
-
+	return psr;
 
 }
 

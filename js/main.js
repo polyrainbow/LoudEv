@@ -31,9 +31,12 @@ function renderRMS(wavesurfer){
 	var OAC = new OfflineAudioContext(2, lengthInSeconds * targetSampleRate, targetSampleRate);
 	var source = OAC.createBufferSource();
 	source.buffer = wavesurfer.backend.buffer;
-	source.connect(OAC.destination);
+	var gain = OAC.createGain();
+	// attenuate gain to get enough overhead for processing
+	gain.gain.value = 0.5;
+	source.connect(gain);
+	gain.connect(OAC.destination);
 	source.start();
-	//OAC.oncomplete = function(audioBufferResampled){
   
 	OAC.startRendering().then(function(renderedBuffer) {
 	
