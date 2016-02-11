@@ -144,32 +144,6 @@ var drawLoudnessDiagram = function(loudness){
 		ctx.beginPath();
 		ctx.lineWidth = 1;
 		
-		if (loudness[i] < 6){
-		
-			ctx.strokeStyle = '#000000';
-		
-		}
-		
-		else if (loudness[i] < 9){
-			ctx.strokeStyle = '#ff0000';
-		}
-		
-		
-		else if (loudness[i] < 9.5){
-			ctx.strokeStyle = '#ffaa00';
-		}
-		
-		
-		else if (loudness[i] < 10){
-			ctx.strokeStyle = '#ffff00';
-		}
-		
-		else {
-		
-			ctx.strokeStyle = '#00ff00';
-		
-		}
-		
 		//typical crest factors are -20 to -3 dbFS
 		var lineHeight = canvas_height * ((loudness[i] + 30) / 30);
 	
@@ -199,44 +173,44 @@ var drawPSRDiagram = function(loudness){
 		ctx.beginPath();
 		ctx.lineWidth = 1;
 		
-		if (loudness[i] < 6){
-		
+		if (loudness[i] < 5){
 			ctx.strokeStyle = '#000000';  //black
-		
 		}
 		
-		else if (loudness[i] < 8){
+		else if (loudness[i] < 6.5){
+			ctx.strokeStyle = '#770000';  //dark red
+		}
+		
+		else if (loudness[i] < 7.25){
 			ctx.strokeStyle = '#ff0000';  //red
 		}
 		
-		
-		else if (loudness[i] < 8.75){
+		else if (loudness[i] < 8){
 			ctx.strokeStyle = '#ff4500';  //orangered
 		}
 		
+		else if (loudness[i] < 8.75){
+			ctx.strokeStyle = '#ffa500';  //orange
+		}
 		
 		else if (loudness[i] < 9.5){
-			ctx.strokeStyle = '#ffa500';
+			ctx.strokeStyle = '#ffc500';  //brighter orange
 		}
-		
 		
 		else if (loudness[i] < 10.5){
-			ctx.strokeStyle = '#ffff00';
+			ctx.strokeStyle = '#ffff00';  //yellow
 		}
 		
-		
 		else if (loudness[i] < 12){
-			ctx.strokeStyle = '#b4ff00';
+			ctx.strokeStyle = '#b4ff00';  //yellow green
 		}
 		
 		else {
-		
-			ctx.strokeStyle = '#00ff00';
-		
+			ctx.strokeStyle = '#00ff00';  //lime green
 		}
 		
-		//typical crest factors are -20 to -3 dbFS
-		var lineHeight = canvas_height * ((loudness[i] - 4) / 16);
+		//typical values in music are 20 to 3 LU
+		var lineHeight = canvas_height * ((loudness[i] - 2) / 17);
 	
 		ctx.moveTo(i, canvas_height);
 		ctx.lineTo(i, canvas_height - lineHeight);
