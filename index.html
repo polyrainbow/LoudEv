@@ -58,7 +58,10 @@
   <div class="container">
     
 			<h1>LoudEv</h1>
-			<p>An EBU R128 compliant online loudness evaluator.</p>
+			<p>
+				An EBU R128 compliant online loudness evaluator.
+				<br>BEWARE: This currently works with Chrome Canary and Chrome Beta due to usage of <a href="https://www.chromestatus.com/feature/6674104937611264">IIRFilterNode</a>.
+			</p>
 	
 			<div id="choose_file_dialog">
 			
@@ -68,7 +71,7 @@
 			</div>
 			
 			<div id="loading_audio_file" style="display: none;">
-				<h2>Loading audio file ...</h2>
+				<h2 style="text-align: center;">Loading audio file ...</h2>
 			</div>
 	
 			<div id="wave"></div>

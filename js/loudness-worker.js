@@ -2,11 +2,12 @@
 	
 	var progress_percent = 0;
 	var progress_percent_old = 0;
-	var buffers = e.data.buffer;
+	var filtered_buffers = e.data.filtered_buffers;
+	var untouched_buffers = e.data.untouched_buffers;
   
 	var width = e.data.width;
   
-	var loudness = new Float32Array(width);
+	var loudness = new Float64Array(width);
 	var psr = new Float32Array(width);
 
 	console.log("Starting with analysing loudness");
@@ -14,9 +15,9 @@
 	//calculate a short term loudness value for each "pixel" of canvas
 	for (var i = 0; i < width; i++){
 		
-		var absoluteSamplePos = Math.round(i/width * buffers[0].length);
-		loudness[i] = getShortTermLoudnessAtSamplePosition(buffers, absoluteSamplePos);
-		psr[i] = getPSRAtSamplePosition(buffers, absoluteSamplePos, loudness[i]);
+		var absoluteSamplePos = Math.round(i/width * filtered_buffers[0].length);
+		loudness[i] = getShortTermLoudnessAtSamplePosition(filtered_buffers, absoluteSamplePos);
+		psr[i] = getPSRAtSamplePosition(untouched_buffers, absoluteSamplePos, loudness[i]);
 	
 		progress_percent = Math.round(i/width * 100);
 	
@@ -43,13 +44,7 @@
 
 function absoluteValueToDBFS(value){
 
-	return 20 * Math.log10(Math.abs(value));	
-
-}
-
-function msInDBFS(value){
-
-	return 10 * Math.log10(Math.abs(value));	
+	return 20 * Math.log10(value);	
 
 }
 
@@ -99,7 +94,7 @@ function getShortTermLoudnessAtSamplePosition(buffers, pos){
 	// The short-term loudness uses a sliding rectangular time window of length 3 s. The
 	// measurement is not gated. The update rate for ‘live meters’ shall be at least 10 Hz.
 	var time_frame = 3; //seconds
-	var samplesCount = Math.round(48000 * time_frame);
+	var samplesCount = Math.round(44100 * time_frame);
 
 	//for every channel one loudness value
 	var channel_loudness_values = new Float32Array(buffers.length);
@@ -113,11 +108,11 @@ function getShortTermLoudnessAtSamplePosition(buffers, pos){
 		var samplesForCalculation = new Float32Array(samplesCount);
 		var i = 0;
 		
-		for (var s = pos - samplesCount; s <= pos; s++){
+		for (var s = pos - samplesCount + 1; s <= pos; s++){
 		
 			if (s >= 0){
 
-				samplesForCalculation[i] = buffers[c][s];
+				samplesForCalculation[i] = 2 * buffers[c][s];
 
 			}
 		
@@ -129,7 +124,7 @@ function getShortTermLoudnessAtSamplePosition(buffers, pos){
 			
 		}
 		
-		channel_loudness_values[c] = ebuPreFilter(samplesForCalculation);
+		channel_loudness_values[c] = ms(samplesForCalculation);
 		
 		/*
 			No channel weigthing applied here, as we're currently only evaluation mono/stereo files with L=1.0 and R=1.0
@@ -139,10 +134,10 @@ function getShortTermLoudnessAtSamplePosition(buffers, pos){
 		
 	}
 	
-	//multiply the loudness with 2 to get from 50% to 100% gain again
-	var l_db = msInDBFS(2 * loudness);
+	//see ITU-R BS.1770-4 equation 2
+	var loudness_lkfs = -0.691 + (10 * Math.log10(loudness));
 	
-	return l_db;
+	return loudness_lkfs;
 
 }
 
@@ -150,7 +145,7 @@ function getShortTermLoudnessAtSamplePosition(buffers, pos){
 function getPSRAtSamplePosition(buffers, samplePos, loudness_value){
 
 	var time_frame = 3; //seconds
-	var samplesCount = Math.round(48000 * time_frame);
+	var samplesCount = Math.round(44100 * time_frame);
 
 	var length = buffers[0].length;
 
@@ -178,86 +173,13 @@ function getPSRAtSamplePosition(buffers, samplePos, loudness_value){
 	
 	}
 	
-	//multiply the max with 2 to get from 50% to 100% gain again
-	var x_peak = getAbsMaxOfArray(samples) * 2;
+	var x_peak = getAbsMaxOfArray(samples);
 	
 	var x_peak_db = absoluteValueToDBFS(x_peak);
 	
 	var psr = x_peak_db - loudness_value;
 	
 	return psr;
-
-}
-
-
-function ebuPreFilter(samples){
-
-	return ms(highPassFilter(sphericalHeadFilter(samples)));
-
-}
-
-
-function highPassFilter(samples){
-
-	var b0 = 1.0;
-	var b1 = -2.0;
-	var b2 = 1.0;
-	var a1 = -1.99004745483398;
-	var a2 = 0.99007225036621;
-	
-	return biquadFilter(samples, b0, b1, b2, a1, a2);
-
-}
-
-
-function sphericalHeadFilter(samples){
-
-	var b0 = 1.53512485958697;
-	var b1 = -2.69169618940638;
-	var b2 = 1.19839281085285;
-	var a1 = -1.69065929318241;
-	var a2 = 0.73248077421585;
-
-	return biquadFilter(samples, b0, b1, b2, a1, a2);
-
-}
-
-
-function biquadFilter(samples, b0, b1, b2, a1, a2){
-
-	var array = new Float32Array(samples);
-
-	for (var z = 0; z < samples.length; z++){
-		
-		var z_0 = samples[z];
-		
-		if (z > 0){
-			var z_1 = samples[z-1];
-		}
-		
-		else {
-			z_1 = 0;
-		}
-		
-		if (z > 1){
-			var z_2 = samples[z-2];
-		}
-		
-		else {
-			z_2 = 0;
-		}
-		
-		var part1 = (b0*z_0) + (b1*z_1) + (b2*z_2);
-		var part2 = (a1*z_1) + (a2*z_2);
-		
-		var result = part1 - part2;
-		
-		array[z] = result;
-	
-	}
-	
-	return array;
-
 
 }
 
@@ -276,17 +198,4 @@ function ms(samples){
 	
 	return ms;
 	
-}
-
-
-function sumSignals(signal1, signal2){
-
-	var combined = new Float32Array(Math.min(signal1.length, signal2.length));
-	
-	for (var i = 0; i < combined.length; i++){
-		combined[i] = (signal1[i] + signal2[i]); // NOT divided by 2!
-	}
-	
-	return combined;
-
 }

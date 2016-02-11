@@ -23,34 +23,74 @@ function renderRMS(wavesurfer){
 	var canvas_width = loudness_canvas.getBoundingClientRect().width * 2;
 	var canvas_height = loudness_canvas.getBoundingClientRect().height * 2;
 
-	var leftChannel = wavesurfer.backend.buffer.getChannelData(0);	
+	// we will also need the untouched channels for PSR calculation
+	var leftChannel_untouched = wavesurfer.backend.buffer.getChannelData(0);	
+	var rightChannel_untouched = wavesurfer.backend.buffer.getChannelData(1);	
 	
 	//get a resampled audioBuffer
-	var lengthInSeconds = leftChannel.length / wavesurfer.backend.ac.sampleRate;
-	var targetSampleRate = 48000;
+	var lengthInSeconds = leftChannel_untouched.length / wavesurfer.backend.ac.sampleRate;
+	var targetSampleRate = 44100;
 	var OAC = new OfflineAudioContext(2, lengthInSeconds * targetSampleRate, targetSampleRate);
 	var source = OAC.createBufferSource();
 	source.buffer = wavesurfer.backend.buffer;
+
+	
+	/*
+		The following filter coefficients are by klangfreund
+		https://github.com/klangfreund/LUFSMeter/blob/master/projects/LUFSMeter/Source/Ebu128LoudnessMeter.cpp
+	*/
+	
+	var ff1 = new Float64Array(3);
+	ff1[0] = 1.53512485958697;  // b0
+    ff1[1] = -2.69169618940638; // b1
+    ff1[2] = 1.19839281085285;  // b2
+    
+	var fb1 = new Float64Array(3);
+	fb1[0] = 1;
+	fb1[1] = -1.69065929318241; // a1
+    fb1[2] = 0.73248077421585; // a2
+    
+	var highshelf_filter = OAC.createIIRFilter(ff1, fb1);
+	
+	var ff2 = new Float64Array(3);
+	ff2[0] = 1.0;               // b0
+    ff2[1] = -2.0;              // b1
+    ff2[2] = 1.0;               // b2
+	
+	var fb2 = new Float64Array(3);
+	fb2[0] = 1;
+	fb2[1] = -1.99004745483398; // a1
+    fb2[2] = 0.99007225036621; // a2
+	
+	var highpass_filter = OAC.createIIRFilter(ff2, fb2);
+	
 	var gain = OAC.createGain();
-	// attenuate gain to get enough overhead for processing
 	gain.gain.value = 0.5;
+	
 	source.connect(gain);
-	gain.connect(OAC.destination);
+	gain.connect(highshelf_filter);
+	highshelf_filter.connect(highpass_filter);
+	highpass_filter.connect(OAC.destination);
+	
+	
 	source.start();
   
 	OAC.startRendering().then(function(renderedBuffer) {
 	
 		console.log('Rendering completed successfully');
-		console.log('Now we have a buffer in 48000, required for EBU analysis');
 
-		var leftChannel48kHz = renderedBuffer.getChannelData(0);
-		var rightChannel48kHz = renderedBuffer.getChannelData(1);
+		var leftChannel_filtered = renderedBuffer.getChannelData(0);
+		var rightChannel_filtered = renderedBuffer.getChannelData(1);
 		
 		var myWorker = new Worker("js/loudness-worker.js");
-		myWorker.postMessage({buffer: [leftChannel48kHz, rightChannel48kHz], width: canvas_width}); // Sending message as an array to the worker
+		myWorker.postMessage({
+			filtered_buffers: [leftChannel_filtered, rightChannel_filtered],
+			untouched_buffers: [leftChannel_untouched, rightChannel_untouched],
+			width: canvas_width}
+		);
+		
 		console.log('Data to analyse posted to worker');
 
-	
 		myWorker.onmessage = function(e) {
 			
 			var data = e.data;
@@ -208,95 +248,6 @@ var drawPSRDiagram = function(loudness){
 }
 
 
-//render an offline audio context to a buffer and make WAV and download it
-var renderOACAndDownloadWAV = function(OAC){
-
-		OAC.startRendering().then(function(renderedBuffer) {
-			console.log('Rendering completed successfully');
-			
-			
-			renderWAVFileFromAudioBuffer(renderedBuffer, function(blob){
-				
-				saveAs(blob, "export.wav");
-				
-			});
-			
-			
-
-		}).catch(function(err) {
-			console.log('Rendering failed: ' + err);
-			// Note: The promise should reject when startRendering is called a second time on an OfflineAudioContext
-		});
-		
-}
-
-
-var renderAndDownloadWAV = function(buffer){
-
-	renderWAVFileFromAudioBuffer(buffer, function(blob){
-
-		saveAs(blob, "export.wav");
-
-	});
-	
-}
-
-
-	var renderWAVFileFromAudioBuffer = function(buffer, then){
-	
-		log("rendering wav form buffer:");
-		log(buffer);
-		
-		// assuming a var named `buffer` exists and is an AudioBuffer instance
-
-		// start a new worker 
-		// we can't use Recorder directly, since it doesn't support what we're trying to do
-		var worker = new Worker("js/recorderWorker.js");
-
-		// initialize the new worker
-		worker.postMessage({
-		  command: 'init',
-		  config: {sampleRate: 48000}
-		});
-
-		// callback for `exportWAV`
-		worker.onmessage = function( e ) {
-		  var blob = e.data;
-		  // this is would be your WAV blob
-		 
-			then(blob);
-		  
-		};
-		
-		// initialize the new worker
-		worker.postMessage({
-			command: 'init',
-			config: {
-				sampleRate: 48000,
-				numChannels: 2
-			}
-		});
-
-		// send the channel data from our buffer to the worker
-		worker.postMessage({
-			command: 'record',
-			buffer: [
-				buffer.getChannelData(0), 
-				buffer.getChannelData(1)
-			]
-		});
-
-		// ask the worker for a WAV
-		worker.postMessage({
-		  command: 'exportWAV',
-		  type: 'audio/wav'
-		});
-	
-	
-	};
-
-
-
 document.addEventListener("DOMContentLoaded", function(){
 
 	loudness_display = g("loudness_display");
@@ -352,7 +303,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
 var getLoudnessAtPosition = function(pos){
 	
-	return Math.round(10 * loudness[Math.round(pos * loudness.length)]) / 10;
+	return Math.round(10 * (loudness[Math.round(pos * loudness.length)])) / 10;
 	
 }
 
