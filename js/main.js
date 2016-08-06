@@ -54,40 +54,47 @@ function renderRMS(wavesurfer){
 	/*
 		The following filter coefficients are by klangfreund
 		https://github.com/klangfreund/LUFSMeter/blob/master/projects/LUFSMeter/Source/Ebu128LoudnessMeter.cpp
+		They are legit for a sample rate of 44100 Hz.
 	*/
 
+	// first stage shelving filter
+	// feed forward coefficients
 	var ff1 = new Float64Array(3);
 	ff1[0] = 1.53512485958697;  // b0
     ff1[1] = -2.69169618940638; // b1
     ff1[2] = 1.19839281085285;  // b2
 
+	// highpass filter - feed forward coefficients
 	var fb1 = new Float64Array(3);
-	fb1[0] = 1;
+	fb1[0] = 1;  // a0
 	fb1[1] = -1.69065929318241; // a1
     fb1[2] = 0.73248077421585; // a2
 
+	// AudioContext.createIIRFilter takes two arrays: feed forward coeffs
+	// and feed backward coeffs
 	var highshelf_filter = OAC.createIIRFilter(ff1, fb1);
 
+	// second stage highpass filter
 	var ff2 = new Float64Array(3);
 	ff2[0] = 1.0;               // b0
     ff2[1] = -2.0;              // b1
     ff2[2] = 1.0;               // b2
 
 	var fb2 = new Float64Array(3);
-	fb2[0] = 1;
+	fb2[0] = 1;  // a0
 	fb2[1] = -1.99004745483398; // a1
     fb2[2] = 0.99007225036621; // a2
 
 	var highpass_filter = OAC.createIIRFilter(ff2, fb2);
 
+	// let's attenuate the signal first, to avoid clipping during the process
 	var gain = OAC.createGain();
 	gain.gain.value = 0.5;
 
-	source.connect(gain);
-	gain.connect(highshelf_filter);
-	highshelf_filter.connect(highpass_filter);
-	highpass_filter.connect(OAC.destination);
-
+	source.connect(gain)
+		.connect(highshelf_filter)
+		.connect(highpass_filter)
+		.connect(OAC.destination);
 
 	source.start();
 
@@ -106,8 +113,8 @@ function renderRMS(wavesurfer){
 			filtered_buffers.push(rightChannel_filtered);
 		}
 
-		var myWorker = new Worker("js/loudness-worker.js");
-		myWorker.postMessage({
+		var worker = new Worker("js/loudness-worker.js");
+		worker.postMessage({
 			filtered_buffers: filtered_buffers,
 			untouched_buffers: untouched_buffers,
 			width: canvas_width}
@@ -115,7 +122,7 @@ function renderRMS(wavesurfer){
 
 		console.log('Data to analyse posted to worker');
 
-		myWorker.onmessage = function(e) {
+		worker.onmessage = function(e) {
 
 			var data = e.data;
 
@@ -137,11 +144,8 @@ function renderRMS(wavesurfer){
 			}
 
 			if (data.type == "progress"){
-
 				g("progress_value_disp").innerHTML = data.progress;
-
 			}
-
 
 		};
 
