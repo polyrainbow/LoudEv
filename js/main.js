@@ -300,13 +300,18 @@ var getPSRAtPosition = function(pos){
 }
 
 var refreshIndicators = function(time){
-	var loudness = getLoudnessAtPosition(time).toString();
-	if (loudness.indexOf(".") == -1) loudness = loudness + ".0";
+	var ebu_lkfs = getLoudnessAtPosition(time);
+	if (!isNaN(ebu_lkfs)){
+		loudness_display.innerHTML = (Math.round( ebu_lkfs * 10 ) / 10).toFixed(1) + " LUFS";
+	} else {
+		loudness_display.innerHTML = "No signal";
+	}
 
-	var psr = getPSRAtPosition(time).toString();
-	if (psr.indexOf(".") == -1) psr = psr + ".0";
-
-	loudness_display.innerHTML = loudness + " LUFS";
-	psr_display.innerHTML = psr + " LU";
+	var psr_lu = getPSRAtPosition(time);
+	if (!isNaN(psr_lu)){
+		psr_display.innerHTML = (Math.round( psr_lu * 10 ) / 10).toFixed(1) + " LU";
+	} else {
+		psr_display.innerHTML = "No signal";
+	}
 
 }
