@@ -1,132 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="utf-8">
+    <title>LoudEv</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
 
-  <!-- Basic Page Needs
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  <meta charset="utf-8">
-  <title>LoudEv</title>
-  <meta name="description" content="">
-  <meta name="author" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Mobile Specific Metas
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
 
-  <!-- FONT
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/skeleton.css">
+    <link rel="stylesheet" href="css/main.css">
 
-  <!-- CSS
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  <link rel="stylesheet" href="css/normalize.css">
-  <link rel="stylesheet" href="css/skeleton.css">
-  <link rel="stylesheet" href="css/main.css">
-
-  <!-- Favicon
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  		<link rel="apple-touch-icon" sizes="57x57" href="icons/apple-touch-icon-57x57.png">
-		<link rel="apple-touch-icon" sizes="60x60" href="icons/apple-touch-icon-60x60.png">
-		<link rel="apple-touch-icon" sizes="72x72" href="icons/apple-touch-icon-72x72.png">
-		<link rel="apple-touch-icon" sizes="76x76" href="icons/apple-touch-icon-76x76.png">
-		<link rel="apple-touch-icon" sizes="114x114" href="icons/apple-touch-icon-114x114.png">
-		<link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120x120.png">
-		<link rel="apple-touch-icon" sizes="144x144" href="icons/apple-touch-icon-144x144.png">
-		<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152x152.png">
-		<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180x180.png">
-		<link rel="icon" type="image/png" href="icons/favicon-32x32.png" sizes="32x32">
-		<link rel="icon" type="image/png" href="icons/android-chrome-192x192.png" sizes="192x192">
-		<link rel="icon" type="image/png" href="icons/favicon-96x96.png" sizes="96x96">
-		<link rel="icon" type="image/png" href="icons/favicon-16x16.png" sizes="16x16">
-		<link rel="manifest" href="manifest.json">
-		<meta name="msapplication-TileColor" content="#2b5797">
-		<meta name="msapplication-TileImage" content="icons/mstile-144x144.png">
-		<meta name="theme-color" content="#ffffff">
+    <link rel="apple-touch-icon" sizes="57x57" href="icons/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="icons/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="icons/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="icons/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="icons/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="icons/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="icons/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="icons/android-chrome-192x192.png" sizes="192x192">
+    <link rel="icon" type="image/png" href="icons/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="icons/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="manifest.json">
+    <meta name="msapplication-TileColor" content="#2b5797">
+    <meta name="msapplication-TileImage" content="icons/mstile-144x144.png">
+    <meta name="theme-color" content="#ffffff">
 
 
-	<script src="js/helpers.js"></script>
-	<script src="js/dom.js"></script>
-	<script src="js/wavesurfer.min.js"></script>
-	<script src="js/main.js"></script>
+    <script src="js/helpers.js"></script>
+    <script src="js/dom.js"></script>
+    <script src="js/wavesurfer.min.js"></script>
+    <script src="js/main.js"></script>
 
 
 </head>
 <body>
-
-  <!-- Primary Page Layout
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  <div class="container">
-
-			<h1>LoudEv</h1>
-			<p>
-				An EBU R128 compliant online loudness evaluator.
-			</p>
-
-			<div id="choose_file_dialog">
-
-				<h2>Choose an audio file to analyze</h2>
-				<input type="file" id="file_input">
-
-			</div>
-
-			<div id="loading_audio_file" style="display: none;">
-				<h2 style="text-align: center;">Loading audio file ...</h2>
-			</div>
-
-			<div id="wave"></div>
-
-			<div id="conducting_loudness_analysis" style="display: none;">
-				<h2>Conducting loudness analysis<br>
-				<span id="progress_value_disp">0</span>%</h2>
-			</div>
-
-			<div id="loudness_div"></div>
-
-			<div id="psr_div"></div>
-
-			<div class="row">
-				<div class="six columns">
-				<p>
-					<span class="display_label">Short-term loudness</span><br>
-					<span class="number_display" id="loudness_display">0.0 LUFS</span>
-				</p>
-				</div>
-				<div class="six columns">
-				<p>
-					<span class="display_label">Peak to short-term loudness</span><br>
-					<span class="number_display" id="psr_display">0.0 LU</span>
-				</p>
-				</div>
-			</div>
-
-
-			  <div class="row" id="footer" style="border-top: 1px solid #eee;">
-				<div class="four columns"><p>An experiment by <a href="https://webaudiotech.com">Web Audio Tech.</a> <a href="https://webaudiotech.com/2015/12/29/getting-ebu-r128-on-the-web/">Read the whole story.</a><br>
-					<img class="footer_logo" src="img/wat_logo_transparent.png">
-					</p>
-				</div>
-				<div class="four columns">
-				<p>This app implements short-term loudness metering according to <a href="https://tech.ebu.ch/loudness">EBU R 128</a>.<br>
-					<a href="https://tech.ebu.ch/loudness"><img class="footer_logo" src="img/ebu_logo_128.png"></a></p>
-
-				</div>
-				<div class="four columns">
-				<p>This app is open-source. <a href="https://github.com/SebastianZimmer/LoudEv">Check it out on GitHub</a>. You are invited to contribute.<br>
-				<a href="https://github.com/SebastianZimmer/LoudEv"><img class="footer_logo" src="img/GitHub-Mark-120px-plus.png"></a><br>
-				</p>
-				</div>
-			  </div>
-
-			  <div class="row" id="footer" style="border-top: 1px solid #eee;">
-				<div class="twelve columns">
-					<p>This app makes use of the great <a href="http://wavesurfer-js.org/">wavesurfer.js by katspaugh</a> (CC-BY 3.0) and the great <a href="http://getskeleton.com/">Skeleton CSS Framework</a>.</a><br>
-				</div>
-			  <div>
-
-
-  </div>
-
-<!-- End Document
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+    <div class="container">
+        <h1>LoudEv</h1>
+        <p>
+            An EBU R128 compliant online loudness evaluator.
+        </p>
+        <div id="choose_file_dialog">
+            <h2>Choose an audio file to analyze</h2>
+            <input type="file" id="file_input">
+        </div>
+        <div id="loading_audio_file" style="display: none;">
+            <h2 style="text-align: center;">Loading audio file ...</h2>
+        </div>
+        <div id="wave"></div>
+        <div id="conducting_loudness_analysis" style="display: none;">
+            <h2>Conducting loudness analysis...<br>
+            <span id="progress_value_disp">0</span>%</h2>
+            <p>This can stay a few seconds at 0%, don't worry too soon.</p>
+        </div>
+        <div id="loudness_div"></div>
+        <div id="psr_div"></div>
+        <div class="row">
+            <div class="six columns">
+                <p>
+                    <span class="display_label">Short-term loudness</span><br>
+                    <span class="number_display" id="loudness_display">0.0 LUFS</span>
+                </p>
+            </div>
+            <div class="six columns">
+                <p>
+                    <span class="display_label">Peak to short-term loudness</span><br>
+                    <span class="number_display" id="psr_display">0.0 LU</span>
+                </p>
+            </div>
+        </div>
+        <div class="row" id="footer" style="border-top: 1px solid #eee;">
+            <div class="four columns">
+                <p>
+                    An experiment by <a href="https://webaudiotech.com">Web Audio Tech.</a> <a href="https://webaudiotech.com/2015/12/29/getting-ebu-r128-on-the-web/">Read the whole story.</a><br>
+                    <img class="footer_logo" src="img/wat_logo_transparent.png">
+                </p>
+            </div>
+            <div class="four columns">
+                <p>
+                    This app implements short-term loudness metering according to
+                    <a href="https://tech.ebu.ch/loudness">EBU R 128</a>.<br>
+                    <a href="https://tech.ebu.ch/loudness">
+                        <img class="footer_logo" src="img/ebu_logo_128.png">
+                    </a>
+                </p>
+            </div>
+            <div class="four columns">
+                <p>
+                    This app is open-source.
+                    <a href="https://github.com/SebastianZimmer/LoudEv">Check it out on GitHub</a>. You are invited to contribute.<br>
+                    <a href="https://github.com/SebastianZimmer/LoudEv"><img class="footer_logo" src="img/GitHub-Mark-120px-plus.png"></a><br>
+                </p>
+            </div>
+        </div>
+        <div class="row" id="footer" style="border-top: 1px solid #eee;">
+            <div class="twelve columns">
+                <p>
+                    This app makes use of
+                    <a href="http://wavesurfer-js.org/">wavesurfer.js by katspaugh</a>
+                    (CC-BY 3.0) and <a href="http://getskeleton.com/">Skeleton CSS Framework</a>.
+                </p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

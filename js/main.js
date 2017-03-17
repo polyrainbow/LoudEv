@@ -2,17 +2,15 @@
 var combined;
 var loudness_canvas = null;
 var psr_canvas;
-
 var loudness = null;
 var psr = null;
-
 var loudness_display = null;
 var psr_display = null;
-
 var channel_count = null;
+var impulseResponseBuffer = null;
 
 
-function renderRMS(wavesurfer){
+function startComputations(wavesurfer){
 
 	loudness_canvas = dom.make("canvas", "loudness_canvas", "", g("loudness_div"));
 	loudness_canvas.style.width = "100%";
@@ -32,133 +30,130 @@ function renderRMS(wavesurfer){
 	// we will also need the untouched channels for PSR calculation
 	var leftChannel_untouched = wavesurfer.backend.buffer.getChannelData(0);
 	untouched_buffers.push(leftChannel_untouched);
-
 	if (channel_count == 2){
 		var rightChannel_untouched = wavesurfer.backend.buffer.getChannelData(1);
 		untouched_buffers.push(rightChannel_untouched);
 	}
-
 	if (channel_count > 2){
 		console.error("Cannot handle more than 2 channels.")
 		return;
 	}
 
-	//get a resampled audioBuffer
+	//get an audioBuffer, where EBU-S values are stored
 	var lengthInSeconds = leftChannel_untouched.length / wavesurfer.backend.ac.sampleRate;
-	var targetSampleRate = 44100;
+	//do not resample
+	var targetSampleRate = wavesurfer.backend.ac.sampleRate;
 	var OAC = new OfflineAudioContext(channel_count, lengthInSeconds * targetSampleRate, targetSampleRate);
 	var source = OAC.createBufferSource();
 	source.buffer = wavesurfer.backend.buffer;
 
+	var ebu_splitter = OAC.createChannelSplitter(2);
 
-	/*
-		The following filter coefficients are by klangfreund
-		https://github.com/klangfreund/LUFSMeter/blob/master/projects/LUFSMeter/Source/Ebu128LoudnessMeter.cpp
-		They are legit for a sample rate of 44100 Hz.
-	*/
+	//first stage shelving filter
+	var highshelf_filter_L = OAC.createBiquadFilter();
+	highshelf_filter_L.type = "highshelf";
+	highshelf_filter_L.Q.value = 1;
+	highshelf_filter_L.frequency.value = 1500;
+	highshelf_filter_L.gain.value = 4;
 
-	// first stage shelving filter
-	// feed forward coefficients
-	var ff1 = new Float64Array(3);
-	ff1[0] = 1.53512485958697;  // b0
-    ff1[1] = -2.69169618940638; // b1
-    ff1[2] = 1.19839281085285;  // b2
-
-	// highpass filter - feed forward coefficients
-	var fb1 = new Float64Array(3);
-	fb1[0] = 1;  // a0
-	fb1[1] = -1.69065929318241; // a1
-    fb1[2] = 0.73248077421585; // a2
-
-	// AudioContext.createIIRFilter takes two arrays: feed forward coeffs
-	// and feed backward coeffs
-	var highshelf_filter = OAC.createIIRFilter(ff1, fb1);
+	var highshelf_filter_R = OAC.createBiquadFilter();
+	highshelf_filter_R.type = "highshelf";
+	highshelf_filter_R.Q.value = 1;
+	highshelf_filter_R.frequency.value = 1500;  //deduced with IIRFilter.getFrequencyResponse
+	highshelf_filter_R.gain.value = 4;
 
 	// second stage highpass filter
-	var ff2 = new Float64Array(3);
-	ff2[0] = 1.0;               // b0
-    ff2[1] = -2.0;              // b1
-    ff2[2] = 1.0;               // b2
+	var highpass_filter_L = OAC.createBiquadFilter();
+	highpass_filter_L.frequency.value = 76;
+	highpass_filter_L.Q.value = 1;
+	highpass_filter_L.type = "highpass";
 
-	var fb2 = new Float64Array(3);
-	fb2[0] = 1;  // a0
-	fb2[1] = -1.99004745483398; // a1
-    fb2[2] = 0.99007225036621; // a2
+	var highpass_filter_R = OAC.createBiquadFilter();
+	highpass_filter_R.frequency.value = 76;
+	highpass_filter_R.Q.value = 1;
+	highpass_filter_R.type = "highpass";
 
-	var highpass_filter = OAC.createIIRFilter(ff2, fb2);
+	//SQUARING EVERY CHANNEL
+	var ebu_square_gain_L = OAC.createGain();
+	ebu_square_gain_L.gain.value = 0;
 
-	// let's attenuate the signal first, to avoid clipping during the process
-	var gain = OAC.createGain();
-	gain.gain.value = 0.5;
+	var ebu_square_gain_R = OAC.createGain();
+	ebu_square_gain_R.gain.value = 0;
 
-	source.connect(gain)
-		.connect(highshelf_filter)
-		.connect(highpass_filter)
-		.connect(OAC.destination);
+	var ebu_convolver_L = OAC.createConvolver();
+	ebu_convolver_L.normalize = false;
+	var ebu_convolver_R = OAC.createConvolver();
+	ebu_convolver_R.normalize = false;
+
+	ebu_convolver_L.buffer = impulseResponseBuffer;
+	ebu_convolver_R.buffer = impulseResponseBuffer;
+
+	var ebu_mean_gain_L = OAC.createGain();
+	ebu_mean_gain_L.gain.value = 1/(OAC.sampleRate * 3);
+	var ebu_mean_gain_R = OAC.createGain();
+	ebu_mean_gain_R.gain.value = 1/(OAC.sampleRate * 3);
+
+	var ebu_channel_summing_gain = OAC.createGain();
+
+	var ebu_s_analyzer = OAC.createAnalyser();
+	ebu_s_analyzer.fftSize = 2048;
+
+	//CONNECTING EBU GRAPH
+	source.connect(ebu_splitter);
+	ebu_splitter.connect(highshelf_filter_L, 0, 0);
+	ebu_splitter.connect(highshelf_filter_R, 1, 0);
+
+	highshelf_filter_L.connect(highpass_filter_L);
+	highshelf_filter_R.connect(highpass_filter_R);
+
+	highpass_filter_L.connect(ebu_square_gain_L);
+	highpass_filter_L.connect(ebu_square_gain_L.gain);
+
+	highpass_filter_R.connect(ebu_square_gain_R);
+	highpass_filter_R.connect(ebu_square_gain_R.gain);
+
+	ebu_square_gain_L.connect(ebu_convolver_L).connect(ebu_mean_gain_L);
+	ebu_square_gain_R.connect(ebu_convolver_R).connect(ebu_mean_gain_R);
+
+	ebu_mean_gain_L.connect(ebu_channel_summing_gain);
+	ebu_mean_gain_R.connect(ebu_channel_summing_gain);
+
+	ebu_channel_summing_gain.connect(OAC.destination);
 
 	source.start();
 
 	OAC.startRendering().then(function(renderedBuffer) {
-
 		console.log('Rendering completed successfully');
-
-		var filtered_buffers = [];
-
-		var leftChannel_filtered = renderedBuffer.getChannelData(0);
-		filtered_buffers.push(leftChannel_filtered);
-
-
-		if (channel_count == 2){
-			var rightChannel_filtered = renderedBuffer.getChannelData(1);
-			filtered_buffers.push(rightChannel_filtered);
-		}
-
+		var ebu_buffer = renderedBuffer.getChannelData(0);
 		var worker = new Worker("js/loudness-worker.js");
 		worker.postMessage({
-			filtered_buffers: filtered_buffers,
+			ebu_buffer: ebu_buffer,
 			untouched_buffers: untouched_buffers,
-			width: canvas_width}
-		);
-
+			width: canvas_width
+		});
 		console.log('Data to analyse posted to worker');
 
 		worker.onmessage = function(e) {
-
 			var data = e.data;
-
 			if (data.type == "finished"){
-
 				console.log('Message received from worker');
 				console.log(data);
-
 				g("conducting_loudness_analysis").style.display = "none";
-
 				loudness = data.loudness;
 				psr = data.psr;
-
 				drawLoudnessDiagram(loudness);
 				drawPSRDiagram(psr);
-
 				wavesurfer.play();
-
 			}
-
 			if (data.type == "progress"){
-				g("progress_value_disp").innerHTML = data.progress;
+				g("progress_value_disp").innerHTML = Math.round( ((data.progress/2) + 50));
 			}
-
 		};
-
 	});
-
-
-
 }
 
 
 var drawLoudnessDiagram = function(loudness){
-
-
 	var canvas_width = loudness_canvas.getBoundingClientRect().width * 2;
 	var canvas_height = loudness_canvas.getBoundingClientRect().height * 2;
 	//set canvas height and width manually
@@ -178,10 +173,7 @@ var drawLoudnessDiagram = function(loudness){
 		ctx.moveTo(i, canvas_height);
 		ctx.lineTo(i, canvas_height - lineHeight);
 		ctx.stroke();
-
 	}
-
-
 }
 
 
@@ -251,73 +243,63 @@ var drawPSRDiagram = function(loudness){
 
 
 document.addEventListener("DOMContentLoaded", function(){
-
 	loudness_display = g("loudness_display");
 	psr_display = g("psr_display");
-
 	wavesurfer = Object.create(WaveSurfer);
 
 	wavesurfer.init({
-
 		container: '#wave',
 		waveColor: 'violet',
 		progressColor: 'purple'
-
 	});
 
 	wavesurfer.on('ready', function () {
-
-		renderRMS(wavesurfer);
-
+		startComputations(wavesurfer);
 		g("loading_audio_file").style.display = "none";
-
 		g("conducting_loudness_analysis").style.display = "block";
-
-
-
 	});
 
 	var display = g("rms_db_display");
 
 	wavesurfer.on('audioprocess', function(){
-
 		var position = wavesurfer.getCurrentTime() / wavesurfer.getDuration();
-
 		refreshIndicators(position);
-
 	});
 
-
 	g('file_input').addEventListener('change', function(evt){
-
 		var file = evt.target.files[0];
-
 		wavesurfer.loadBlob(file);
-
 		dom.remove(g("choose_file_dialog"));
-
 		g("loading_audio_file").style.display = "block";
-
 	}, false);
+
+
+	// grab impulse response via XHR for convolver node
+	var ajaxRequest = new XMLHttpRequest();
+	ajaxRequest.open('GET', "impulse responses/3sec-1-mono_44100.wav", true);
+	ajaxRequest.responseType = 'arraybuffer';
+	ajaxRequest.onload = function() {
+		var audioData = ajaxRequest.response;
+		wavesurfer.backend.ac.decodeAudioData(audioData, function(audioBuffer) {
+			impulseResponseBuffer = audioBuffer;
+			console.log("Convolver buffer ready!");
+		}, function(e){"Error with decoding audio data" + e.err});
+	}
+	ajaxRequest.send();
 
 });
 
 
 var getLoudnessAtPosition = function(pos){
-
 	return Math.round(10 * (loudness[Math.round(pos * loudness.length)])) / 10;
-
 }
 
 
 var getPSRAtPosition = function(pos){
-
 	return Math.round(10 * psr[Math.round(pos * psr.length)]) / 10;
-
 }
 
 var refreshIndicators = function(time){
-
 	var loudness = getLoudnessAtPosition(time).toString();
 	if (loudness.indexOf(".") == -1) loudness = loudness + ".0";
 
