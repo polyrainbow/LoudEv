@@ -192,53 +192,17 @@ var drawPSRDiagram = function(loudness){
 
 		ctx.beginPath();
 		ctx.lineWidth = 1;
+		var psr_value = loudness[i];
+		canvasCtx_loudness.strokeStyle = getColorOfPSRValue(psr_value);
 
-		if (loudness[i] < 5){
-			ctx.strokeStyle = '#000000';  //black
-		}
-
-		else if (loudness[i] < 6.5){
-			ctx.strokeStyle = '#770000';  //dark red
-		}
-
-		else if (loudness[i] < 7.25){
-			ctx.strokeStyle = '#ff0000';  //red
-		}
-
-		else if (loudness[i] < 8){
-			ctx.strokeStyle = '#ff4500';  //orangered
-		}
-
-		else if (loudness[i] < 8.75){
-			ctx.strokeStyle = '#ffa500';  //orange
-		}
-
-		else if (loudness[i] < 9.5){
-			ctx.strokeStyle = '#ffc500';  //brighter orange
-		}
-
-		else if (loudness[i] < 10.5){
-			ctx.strokeStyle = '#ffff00';  //yellow
-		}
-
-		else if (loudness[i] < 12){
-			ctx.strokeStyle = '#b4ff00';  //yellow green
-		}
-
-		else {
-			ctx.strokeStyle = '#00ff00';  //lime green
-		}
-
-		//typical values in music are 20 to 3 LU
-		var lineHeight = canvas_height * ((loudness[i] - 2) / 17);
+		//typical values in pop music are 20 to 3 LU
+		var lineHeight = canvas_height * ((psr_value - 2) / 17);
 
 		ctx.moveTo(i, canvas_height);
 		ctx.lineTo(i, canvas_height - lineHeight);
 		ctx.stroke();
 
 	}
-
-
 }
 
 
@@ -313,5 +277,33 @@ var refreshIndicators = function(time){
 	} else {
 		psr_display.innerHTML = "No signal";
 	}
+
+}
+
+
+var getColorOfPSRValue = function(psr_value){
+	var color;
+
+	if (psr_value < 4.75){
+		color = '#000000';  //black
+	} else if (psr_value < 5.75){
+		color = '#770000';  //dark red
+	} else if (psr_value < 6.75){
+		color = '#ff0000';  //red
+	} else if (psr_value < 7.25){
+		color = '#ff4500';  //orangered
+	} else if (psr_value < 7.75){
+		color = '#ffa500';  //orange
+	} else if (psr_value < 8.5){
+		color = '#ffc500';  //brighter orange
+	} else if (psr_value < 9.75){
+		color = '#ffff00';  //yellow
+	} else if (psr_value < 11){
+		color = '#b4ff00';  //yellow green
+	} else {
+		color = '#00ff00';  //lime green
+	}
+
+	return color;
 
 }
