@@ -193,7 +193,7 @@ var drawPSRDiagram = function(loudness){
 		ctx.beginPath();
 		ctx.lineWidth = 1;
 		var psr_value = loudness[i];
-		canvasCtx_loudness.strokeStyle = getColorOfPSRValue(psr_value);
+		ctx.strokeStyle = getColorOfPSRValue(psr_value);
 
 		//typical values in pop music are 20 to 3 LU
 		var lineHeight = canvas_height * ((psr_value - 2) / 17);
@@ -284,19 +284,19 @@ var refreshIndicators = function(time){
 var getColorOfPSRValue = function(psr_value){
 	var color;
 
-	if (psr_value < 4.75){
+	if (psr_value < 5){
 		color = '#000000';  //black
-	} else if (psr_value < 5.75){
+	} else if (psr_value < 6){
 		color = '#770000';  //dark red
-	} else if (psr_value < 6.75){
+	} else if (psr_value < 7){
 		color = '#ff0000';  //red
-	} else if (psr_value < 7.25){
+	} else if (psr_value < 7.5){
 		color = '#ff4500';  //orangered
-	} else if (psr_value < 7.75){
+	} else if (psr_value < 8){
 		color = '#ffa500';  //orange
 	} else if (psr_value < 8.5){
 		color = '#ffc500';  //brighter orange
-	} else if (psr_value < 9.75){
+	} else if (psr_value < 9.5){
 		color = '#ffff00';  //yellow
 	} else if (psr_value < 11){
 		color = '#b4ff00';  //yellow green
