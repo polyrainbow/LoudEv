@@ -1,26 +1,26 @@
 .display_label{
-	
 	font-size: smaller;
-	
 }
 
 .number_display{
-	
 	font-size: larger;
 	font-weight: bold;
-	
 }
 
 .footer_logo{
-	
 	height: 120px;
 	padding-top: 15px;
-	
-	
 }
 
 #conducting_loudness_analysis{
-	
 	text-align: center;
-	
+}
+
+#assessment_emoji_wrapper{
+	text-align: center;
+	font-size: 48pt;
+}
+
+#assessment_title_container{
+	margin-bottom: 5px;
 }

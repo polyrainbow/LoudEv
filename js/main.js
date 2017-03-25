@@ -143,6 +143,7 @@ function startComputations(wavesurfer){
 				psr = data.psr;
 				drawLoudnessDiagram(loudness);
 				drawPSRDiagram(psr);
+				drawConclusion(psr);
 				wavesurfer.play();
 			}
 			if (data.type == "progress"){
@@ -174,6 +175,116 @@ var drawLoudnessDiagram = function(loudness){
 		ctx.lineTo(i, canvas_height - lineHeight);
 		ctx.stroke();
 	}
+}
+
+
+var getEmojiOfPSRValue = function(psr_value){
+	var emoji;
+
+	if (psr_value < 5){
+		emoji = '😵';
+	} else if (psr_value < 6){
+		emoji = '😭';
+	} else if (psr_value < 7){
+		emoji = '😢';
+	} else if (psr_value < 7.5){
+		emoji = '☹️';
+	} else if (psr_value < 8){
+		emoji = '🙁';
+	} else if (psr_value < 8.5){
+		emoji = '😕';
+	} else if (psr_value < 9.5){
+		emoji = '😐';
+	} else if (psr_value < 11){
+		emoji = '😊';
+	} else {
+		emoji = '😃';
+	}
+
+	return emoji;
+
+}
+
+
+var getAssessmentForPSRValue = function(psr_value){
+	var assessment;
+
+	if (psr_value < 5){
+		assessment = {
+			title: "No, just no!",
+			description: "You have mastered your music far too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
+		};
+	} else if (psr_value < 6){
+		assessment = {
+			title: "No, just no!",
+			description: "You have mastered your music far too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
+		};
+	} else if (psr_value < 7){
+		assessment = {
+			title: "No, just no!",
+			description: "You have mastered your music far too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
+		};
+	} else if (psr_value < 7.5){
+		assessment = {
+			title: "No, just no!",
+			description: "You have mastered your music too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
+		};
+	} else if (psr_value < 8){
+		assessment = {
+			title: "Well... almost!",
+			description: "You have mastered your music a bit too loud. You can get better playback results on online streaming platforms like YouTube and Spotify, when you push the master compressor a bit less hard."
+		};
+	} else if (psr_value < 8.5){
+		assessment = {
+			title: "Well... almost!",
+			description: "You have mastered your music a bit too loud. You can get better playback results on online streaming platforms like YouTube and Spotify, when you push the master compressor a bit less hard."
+		};
+	} else if (psr_value < 9.5){
+		assessment = {
+			title: "OK!",
+			description: "Your track has some dynamic range, which is good. That way, you can get decent playback results on online streaming platforms like YouTube and Spotify."
+		};
+	} else if (psr_value < 11){
+		assessment = {
+			title: "Perfect!",
+			description: "Your track has some dynamic range, which is good. That way, you can get decent playback results on online streaming platforms like YouTube and Spotify."
+		};
+	} else {
+		assessment = {
+			title: "Good!",
+			description: "Your track has a lot of dynamic range, which is good. That way, you can get decent playback results on online streaming platforms like YouTube and Spotify."
+		};
+	}
+
+	return assessment;
+
+}
+
+
+var drawConclusion = function(psr){
+
+
+	var assessment_emoji_container = g("assessment_emoji_container");
+	var assessment_title_container = g("assessment_title_container");
+	var assessment_description_container = g("assessment_description_container");
+	var sum = 0;
+	var count = 0;
+	for (var i = 0; i < psr.length; i++){
+		if (!isNaN(psr[i])){
+			sum += psr[i];
+			count++;
+		}
+	}
+	var median = sum / count;
+	var assessment = getAssessmentForPSRValue(median);
+	var emoji = getEmojiOfPSRValue(median);
+	var median_rounded = (Math.round( median * 10 ) / 10).toFixed(1);
+
+	assessment_emoji_container.innerHTML = emoji;
+	assessment_title_container.innerHTML = assessment.title;
+	assessment_description_container.innerHTML = assessment.description + "<br>"+
+	"The average dynamic range of your track is " + median_rounded + " LU.";
+
 }
 
 
