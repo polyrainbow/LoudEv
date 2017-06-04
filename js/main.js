@@ -4,10 +4,14 @@ var loudness_canvas = null;
 var psr_canvas;
 var loudness = null;
 var psr = null;
+var true_peak = null;
 var loudness_display = null;
 var psr_display = null;
+var dbtp_display = null;
 var channel_count = null;
 var impulseResponseBuffer = null;
+var worker1_progress = 0;
+var worker2_progress = 0;
 
 
 function startComputations(wavesurfer){
@@ -39,7 +43,7 @@ function startComputations(wavesurfer){
 		return;
 	}
 
-	//get an audioBuffer, where EBU-S values are stored
+	//get an audioBuffer, in which EBU-S values are stored
 	var lengthInSeconds = leftChannel_untouched.length / wavesurfer.backend.ac.sampleRate;
 	//do not resample
 	var targetSampleRate = wavesurfer.backend.ac.sampleRate;
@@ -147,10 +151,59 @@ function startComputations(wavesurfer){
 				wavesurfer.play();
 			}
 			if (data.type == "progress"){
-				g("progress_value_disp").innerHTML = Math.round( ((data.progress/2) + 50));
+				worker1_progress = (data.progress/2) + 50;
+				g("progress_value_disp").innerHTML = Math.round(((worker1_progress/100) + (worker2_progress/100)) / 2 * 100);
 			}
 		};
 	});
+
+	//True-peak context
+
+	//get an audioBuffer, in which EBU-S values are stored
+	var lengthInSeconds = leftChannel_untouched.length / wavesurfer.backend.ac.sampleRate;
+	//oversample to 192000 Hz
+	var targetSampleRate = 192000;
+	var OAC_TP = new OfflineAudioContext(channel_count, lengthInSeconds * targetSampleRate, targetSampleRate);
+	var source = OAC_TP.createBufferSource();
+	source.buffer = wavesurfer.backend.buffer;
+	source.start();
+
+	var gain = OAC_TP.createGain();
+	gain.gain.value = 0.5;
+
+	var lp_filter = OAC_TP.createBiquadFilter()
+	lp_filter.type = "lowpass";
+	lp_filter.frequency.value = 20000;
+
+	source.connect(gain).connect(lp_filter).connect(OAC_TP.destination);
+
+	OAC_TP.startRendering().then(function(renderedBuffer) {
+		console.log('OAC_TP rendering completed successfully');
+		var buffers = [renderedBuffer.getChannelData(0)];
+		if (renderedBuffer.channelCount > 1){
+			buffers.push(renderedBuffer.getChannelData(1));
+		}
+		var worker = new Worker("js/true-peak-worker.js");
+		worker.postMessage({
+			buffers: buffers,
+			width: canvas_width
+		});
+		console.log('True peak: Data to analyse posted to worker');
+
+		worker.onmessage = function(e) {
+			var data = e.data;
+			if (data.type == "finished"){
+				console.log('True peak: Worker has finished');
+				console.log("Maximum detected value: " + data.max + " dBTP");
+				true_peak = data.true_peak;
+			}
+			if (data.type == "progress"){
+				worker2_progress = data.progress;
+				g("progress_value_disp").innerHTML = Math.round(((worker1_progress/100) + (worker2_progress/100)) / 2 * 100);
+			}
+		};
+	});
+
 }
 
 
@@ -320,6 +373,7 @@ var drawPSRDiagram = function(loudness){
 document.addEventListener("DOMContentLoaded", function(){
 	loudness_display = g("loudness_display");
 	psr_display = g("psr_display");
+	dbtp_display = g("dbtp_display");
 	wavesurfer = Object.create(WaveSurfer);
 
 	wavesurfer.init({
@@ -374,6 +428,10 @@ var getPSRAtPosition = function(pos){
 	return Math.round(10 * psr[Math.round(pos * psr.length)]) / 10;
 }
 
+var getDBTPAtPosition = function(pos){
+	return Math.round(10 * true_peak[Math.round(pos * true_peak.length)]) / 10;
+}
+
 var refreshIndicators = function(time){
 	var ebu_lkfs = getLoudnessAtPosition(time);
 	if (!isNaN(ebu_lkfs)){
@@ -387,6 +445,18 @@ var refreshIndicators = function(time){
 		psr_display.innerHTML = (Math.round( psr_lu * 10 ) / 10).toFixed(1) + " LU";
 	} else {
 		psr_display.innerHTML = "No signal";
+	}
+
+	var dbtp = getDBTPAtPosition(time);
+	if (!isNaN(dbtp)){
+		if (dbtp > 0){
+			dbtp_display.style.color = "red";
+		} else {
+			dbtp_display.style.color = "";
+		}
+		dbtp_display.innerHTML = (Math.round( dbtp * 10 ) / 10).toFixed(1) + " dBTP";
+	} else {
+		dbtp_display.innerHTML = "No signal";
 	}
 
 }

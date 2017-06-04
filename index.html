@@ -57,21 +57,26 @@
         <div id="conducting_loudness_analysis" style="display: none;">
             <h2>Conducting loudness analysis...<br>
             <span id="progress_value_disp">0</span>%</h2>
-            <p>This can stay a few seconds at 0%, don't worry too soon.</p>
         </div>
         <div id="loudness_div"></div>
         <div id="psr_div"></div>
         <div class="row">
-            <div class="six columns">
+            <div class="four columns">
                 <p>
                     <span class="display_label">Short-term loudness</span><br>
                     <span class="number_display" id="loudness_display">0.0 LUFS</span>
                 </p>
             </div>
-            <div class="six columns">
+			<div class="four columns">
                 <p>
                     <span class="display_label">Peak to short-term loudness</span><br>
                     <span class="number_display" id="psr_display">0.0 LU</span>
+                </p>
+            </div>
+			<div class="four columns">
+                <p>
+                    <span class="display_label">True Peak</span><br>
+                    <span class="number_display" id="dbtp_display">0.0 dBTP</span>
                 </p>
             </div>
         </div>
