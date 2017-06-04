@@ -10,6 +10,7 @@ var psr_display = null;
 var dbtp_display = null;
 var channel_count = null;
 var impulseResponseBuffer = null;
+var max_true_peak = null;
 var worker1_progress = 0;
 var worker2_progress = 0;
 
@@ -195,6 +196,7 @@ function startComputations(wavesurfer){
 			if (data.type == "finished"){
 				console.log('True peak: Worker has finished');
 				console.log("Maximum detected value: " + data.max + " dBTP");
+				max_true_peak = data.max;
 				true_peak = data.true_peak;
 			}
 			if (data.type == "progress"){
@@ -332,11 +334,13 @@ var drawConclusion = function(psr){
 	var assessment = getAssessmentForPSRValue(median);
 	var emoji = getEmojiOfPSRValue(median);
 	var median_rounded = (Math.round( median * 10 ) / 10).toFixed(1);
+	var max_true_peak_rounded = (Math.round( max_true_peak * 10 ) / 10).toFixed(1);
 
 	assessment_emoji_container.innerHTML = emoji;
 	assessment_title_container.innerHTML = assessment.title;
 	assessment_description_container.innerHTML = assessment.description + "<br>"+
-	"The average dynamic range of your track is " + median_rounded + " LU.";
+	"Average dynamic range: " + median_rounded + " LU<br>"+
+	"Maximum true peak level: " + max_true_peak_rounded + " dBTP";
 
 }
 
