@@ -44,6 +44,68 @@ function startComputations(wavesurfer){
 		return;
 	}
 
+/* INTEGRATED LOUDNESS */
+
+	//get an audioBuffer, in which EBU-S values are stored
+	var lengthInSeconds = leftChannel_untouched.length / wavesurfer.backend.ac.sampleRate;
+	//do not resample
+	var targetSampleRate = wavesurfer.backend.ac.sampleRate;
+	var OAC_IL = new OfflineAudioContext(channel_count, lengthInSeconds * targetSampleRate, targetSampleRate);
+	var source = OAC_IL.createBufferSource();
+	source.buffer = wavesurfer.backend.buffer;
+
+	var splitter = OAC_IL.createChannelSplitter(2);
+	var merger = OAC_IL.createChannelMerger(2);
+
+	//first stage shelving filter
+	var highshelf_filter = OAC_IL.createBiquadFilter();
+	highshelf_filter.type = "highshelf";
+	highshelf_filter.Q.value = 1;
+	highshelf_filter.frequency.value = 1500;
+	highshelf_filter.gain.value = 4;
+
+	// second stage highpass filter
+	var highpass_filter = OAC_IL.createBiquadFilter();
+	highpass_filter.frequency.value = 76;
+	highpass_filter.Q.value = 1;
+	highpass_filter.type = "highpass";
+
+	//SQUARING EVERY CHANNEL
+	var square_gain = OAC_IL.createGain();
+	square_gain.gain.value = 0;
+
+	//CONNECTING EBU GRAPH
+	source
+	.connect(highshelf_filter)
+	.connect(highpass_filter)
+	.connect(square_gain);
+	highpass_filter.connect(square_gain.gain);
+	square_gain.connect(OAC_IL.destination);
+
+	source.start();
+
+	OAC_IL.startRendering().then(function(renderedBuffer) {
+		console.log('Rendering completed successfully');
+		var signal_filtered_squared = [
+			renderedBuffer.getChannelData(0),
+			renderedBuffer.getChannelData(1)
+		];
+
+		var il_worker = new Worker("js/integrated-loudness-worker.js");
+		//compute integrated loudness
+		il_worker.postMessage({
+			buffers: signal_filtered_squared,
+			duration: wavesurfer.backend.buffer.duration
+		});
+
+		il_worker.onmessage = function(e) {
+			var data = e.data;
+			if (data.type == "finished"){
+				console.log("ILW FINISHED!!! Integrated loudness: " + data.integratedLoudness + " LUFS");
+			}
+		}
+	});
+
 	//get an audioBuffer, in which EBU-S values are stored
 	var lengthInSeconds = leftChannel_untouched.length / wavesurfer.backend.ac.sampleRate;
 	//do not resample
@@ -261,45 +323,45 @@ var getEmojiOfPSRValue = function(psr_value){
 }
 
 
-var getAssessmentForPSRValue = function(psr_value){
+var getAssessmentForPLRValue = function(plr_value){
 	var assessment;
 
-	if (psr_value < 5){
+	if (plr_value < 5){
 		assessment = {
 			title: "No, just no!",
 			description: "You have mastered your music far too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
 		};
-	} else if (psr_value < 6){
+	} else if (plr_value < 6){
 		assessment = {
 			title: "No, just no!",
 			description: "You have mastered your music far too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
 		};
-	} else if (psr_value < 7){
+	} else if (plr_value < 7){
 		assessment = {
 			title: "No, just no!",
 			description: "You have mastered your music far too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
 		};
-	} else if (psr_value < 7.5){
+	} else if (plr_value < 7.5){
 		assessment = {
 			title: "No, just no!",
 			description: "You have mastered your music too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
 		};
-	} else if (psr_value < 8){
+	} else if (plr_value < 8){
 		assessment = {
 			title: "Well... almost!",
 			description: "You have mastered your music a bit too loud. You can get better playback results on online streaming platforms like YouTube and Spotify, when you push the master compressor a bit less hard."
 		};
-	} else if (psr_value < 8.5){
+	} else if (plr_value < 8.5){
 		assessment = {
 			title: "Well... almost!",
 			description: "You have mastered your music a bit too loud. You can get better playback results on online streaming platforms like YouTube and Spotify, when you push the master compressor a bit less hard."
 		};
-	} else if (psr_value < 9.5){
+	} else if (plr_value < 9.5){
 		assessment = {
 			title: "OK!",
 			description: "Your track has some dynamic range, which is good. That way, you can get decent playback results on online streaming platforms like YouTube and Spotify."
 		};
-	} else if (psr_value < 11){
+	} else if (plr_value < 11){
 		assessment = {
 			title: "Perfect!",
 			description: "Your track has some dynamic range, which is good. That way, you can get decent playback results on online streaming platforms like YouTube and Spotify."
@@ -334,13 +396,15 @@ var drawConclusion = function(psr){
 	var assessment = getAssessmentForPSRValue(median);
 	var emoji = getEmojiOfPSRValue(median);
 	var median_rounded = (Math.round( median * 10 ) / 10).toFixed(1);
+	var median_rounded = (Math.round( median * 10 ) / 10).toFixed(1);
 	var max_true_peak_rounded = (Math.round( max_true_peak * 10 ) / 10).toFixed(1);
 
 	assessment_emoji_container.innerHTML = emoji;
 	assessment_title_container.innerHTML = assessment.title;
 	assessment_description_container.innerHTML = assessment.description + "<br>"+
 	"Average dynamic range: " + median_rounded + " LU<br>"+
-	"Maximum true peak level: " + max_true_peak_rounded + " dBTP";
+	"Maximum true peak level: " + max_true_peak_rounded + " dBTP" +
+	"Integrated loudness: " + integratedLoudness_rounded + " LUFS";
 
 }
 
