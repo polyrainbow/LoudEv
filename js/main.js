@@ -340,7 +340,7 @@ var drawConclusion = function(psr){
 			"assessment": ASSESS.PLR(plr).emoji
 		},
 		{
-			"label": "Minimum peak to short term loudness ratio (PSR)",
+			"label": "Minimum peak to short-term loudness ratio (PSR)",
 			"subtitle": "where true peak is above -7 dbTP",
 			"value": min_psr,
 			"unit": "LU",
