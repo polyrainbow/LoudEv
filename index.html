@@ -34,6 +34,7 @@
 
 
     <script src="js/helpers.js"></script>
+    <script src="js/assess.js"></script>
     <script src="js/dom.js"></script>
     <script src="js/wavesurfer.min.js"></script>
     <script src="js/main.js"></script>
@@ -89,6 +90,10 @@
 				<span id="assessment_description_container"></span>
 			</div>
 		</div>
+        <table class="statsTable">
+          <tbody id="statTableBody">
+          </tbody>
+        </table>
         <div class="row" id="footer" style="border-top: 1px solid #eee;">
             <div class="four columns">
                 <p>
@@ -98,7 +103,7 @@
             </div>
             <div class="four columns">
                 <p>
-                    This app implements short-term loudness metering according to
+                    This app implements loudness metering according to
                     <a href="https://tech.ebu.ch/loudness">EBU R 128</a>.<br>
                     <a href="https://tech.ebu.ch/loudness">
                         <img class="footer_logo" src="img/ebu_logo_128.png">

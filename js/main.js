@@ -5,6 +5,7 @@ var psr_canvas;
 var loudness = null;
 var psr = null;
 var true_peak = null;
+var integratedLoudness = null;
 var loudness_display = null;
 var psr_display = null;
 var dbtp_display = null;
@@ -91,7 +92,7 @@ function startComputations(wavesurfer){
 			renderedBuffer.getChannelData(1)
 		];
 
-		var il_worker = new Worker("js/integrated-loudness-worker.js");
+		var il_worker = new Worker("js/workers/integrated-loudness-worker.js");
 		//compute integrated loudness
 		il_worker.postMessage({
 			buffers: signal_filtered_squared,
@@ -101,7 +102,8 @@ function startComputations(wavesurfer){
 		il_worker.onmessage = function(e) {
 			var data = e.data;
 			if (data.type == "finished"){
-				console.log("ILW FINISHED!!! Integrated loudness: " + data.integratedLoudness + " LUFS");
+				console.log("ILW finished! Integrated loudness: " + data.integratedLoudness + " LUFS");
+				integratedLoudness = data.integratedLoudness;
 			}
 		}
 	});
@@ -192,7 +194,7 @@ function startComputations(wavesurfer){
 	OAC.startRendering().then(function(renderedBuffer) {
 		console.log('Rendering completed successfully');
 		var ebu_buffer = renderedBuffer.getChannelData(0);
-		var worker = new Worker("js/loudness-worker.js");
+		var worker = new Worker("js/workers/loudness-worker.js");
 		worker.postMessage({
 			ebu_buffer: ebu_buffer,
 			untouched_buffers: untouched_buffers,
@@ -246,7 +248,7 @@ function startComputations(wavesurfer){
 		if (renderedBuffer.channelCount > 1){
 			buffers.push(renderedBuffer.getChannelData(1));
 		}
-		var worker = new Worker("js/true-peak-worker.js");
+		var worker = new Worker("js/workers/true-peak-worker.js");
 		worker.postMessage({
 			buffers: buffers,
 			width: canvas_width
@@ -295,91 +297,7 @@ var drawLoudnessDiagram = function(loudness){
 }
 
 
-var getEmojiOfPSRValue = function(psr_value){
-	var emoji;
-
-	if (psr_value < 5){
-		emoji = '😵';
-	} else if (psr_value < 6){
-		emoji = '😭';
-	} else if (psr_value < 7){
-		emoji = '😢';
-	} else if (psr_value < 7.5){
-		emoji = '☹️';
-	} else if (psr_value < 8){
-		emoji = '🙁';
-	} else if (psr_value < 8.5){
-		emoji = '😕';
-	} else if (psr_value < 9.5){
-		emoji = '😐';
-	} else if (psr_value < 11){
-		emoji = '😊';
-	} else {
-		emoji = '😃';
-	}
-
-	return emoji;
-
-}
-
-
-var getAssessmentForPLRValue = function(plr_value){
-	var assessment;
-
-	if (plr_value < 5){
-		assessment = {
-			title: "No, just no!",
-			description: "You have mastered your music far too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
-		};
-	} else if (plr_value < 6){
-		assessment = {
-			title: "No, just no!",
-			description: "You have mastered your music far too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
-		};
-	} else if (plr_value < 7){
-		assessment = {
-			title: "No, just no!",
-			description: "You have mastered your music far too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
-		};
-	} else if (plr_value < 7.5){
-		assessment = {
-			title: "No, just no!",
-			description: "You have mastered your music too loud. Pull back your mastering compressor to get better playback results on online streaming platforms like YouTube and Spotify."
-		};
-	} else if (plr_value < 8){
-		assessment = {
-			title: "Well... almost!",
-			description: "You have mastered your music a bit too loud. You can get better playback results on online streaming platforms like YouTube and Spotify, when you push the master compressor a bit less hard."
-		};
-	} else if (plr_value < 8.5){
-		assessment = {
-			title: "Well... almost!",
-			description: "You have mastered your music a bit too loud. You can get better playback results on online streaming platforms like YouTube and Spotify, when you push the master compressor a bit less hard."
-		};
-	} else if (plr_value < 9.5){
-		assessment = {
-			title: "OK!",
-			description: "Your track has some dynamic range, which is good. That way, you can get decent playback results on online streaming platforms like YouTube and Spotify."
-		};
-	} else if (plr_value < 11){
-		assessment = {
-			title: "Perfect!",
-			description: "Your track has some dynamic range, which is good. That way, you can get decent playback results on online streaming platforms like YouTube and Spotify."
-		};
-	} else {
-		assessment = {
-			title: "Good!",
-			description: "Your track has a lot of dynamic range, which is good. That way, you can get decent playback results on online streaming platforms like YouTube and Spotify."
-		};
-	}
-
-	return assessment;
-
-}
-
-
 var drawConclusion = function(psr){
-
 
 	var assessment_emoji_container = g("assessment_emoji_container");
 	var assessment_title_container = g("assessment_title_container");
@@ -392,21 +310,72 @@ var drawConclusion = function(psr){
 			count++;
 		}
 	}
-	var median = sum / count;
-	var assessment = getAssessmentForPSRValue(median);
-	var emoji = getEmojiOfPSRValue(median);
-	var median_rounded = (Math.round( median * 10 ) / 10).toFixed(1);
-	var median_rounded = (Math.round( median * 10 ) / 10).toFixed(1);
-	var max_true_peak_rounded = (Math.round( max_true_peak * 10 ) / 10).toFixed(1);
 
-	assessment_emoji_container.innerHTML = emoji;
-	assessment_title_container.innerHTML = assessment.title;
-	assessment_description_container.innerHTML = assessment.description + "<br>"+
-	"Average dynamic range: " + median_rounded + " LU<br>"+
-	"Maximum true peak level: " + max_true_peak_rounded + " dBTP" +
-	"Integrated loudness: " + integratedLoudness_rounded + " LUFS";
+	var min_psr = getMinOfArray(psr.filter(val => !isNaN(val)));
+
+	var median = sum / count;
+
+	var plr = max_true_peak - integratedLoudness;
+
+	var plr_assessment = ASSESS.PLR(plr);
+	assessment_emoji_container.innerHTML = plr_assessment.emoji;
+	assessment_title_container.innerHTML = plr_assessment.title;
+	assessment_description_container.innerHTML = plr_assessment.description;
+
+ 	var stats = [
+		{
+			"label": "Integrated loudness",
+			"value": integratedLoudness,
+			"unit": "LUFS",
+			"assessment": ASSESS.integratedLoudness(integratedLoudness)
+		},
+		{
+			"label": "Peak to integrated loudness ratio (PLR)",
+			"value": plr,
+			"unit": "LU",
+			"assessment": ASSESS.PLR(plr).emoji
+		},
+		{
+			"label": "Minimum peak to short term loudness ratio (PSR)",
+			"value": min_psr,
+			"unit": "LU",
+			"assessment": ASSESS.minPSR(min_psr)
+		},
+		{
+			"label": "Maximum true peak level",
+			"value": max_true_peak,
+			"unit": "dbTP",
+			"assessment": ASSESS.maxTruePeak(max_true_peak)
+		},
+		{
+			"label": "Average dynamic range",
+			"value": median,
+			"unit": "LU",
+			"assessment": ""
+		}
+	];
+
+	stats.forEach(stat => {
+		var tr = document.createElement("tr");
+		g("statTableBody").appendChild(tr);
+
+		var td = document.createElement("td");
+		td.innerHTML = stat.label;
+		tr.appendChild(td);
+
+		td = document.createElement("td");
+		var value_rounded = (Math.round( stat.value * 10 ) / 10).toFixed(1);
+		td.innerHTML = value_rounded + " " + stat.unit;
+		tr.appendChild(td);
+
+		td = document.createElement("td");
+		td.innerHTML = stat.assessment;
+		tr.appendChild(td);
+
+	});
 
 }
+
 
 
 var drawPSRDiagram = function(loudness){
@@ -425,7 +394,7 @@ var drawPSRDiagram = function(loudness){
 		ctx.beginPath();
 		ctx.lineWidth = 1;
 		var psr_value = loudness[i];
-		ctx.strokeStyle = getColorOfPSRValue(psr_value);
+		ctx.strokeStyle = ASSESS.getPSRColor(psr_value);
 
 		//typical values in pop music are 20 to 3 LU
 		var lineHeight = canvas_height * ((psr_value - 2) / 17);
@@ -472,17 +441,14 @@ document.addEventListener("DOMContentLoaded", function(){
 
 
 	// grab impulse response via XHR for convolver node
-	var ajaxRequest = new XMLHttpRequest();
-	ajaxRequest.open('GET', "impulse responses/3sec-1-mono_44100.wav", true);
-	ajaxRequest.responseType = 'arraybuffer';
-	ajaxRequest.onload = function() {
-		var audioData = ajaxRequest.response;
-		wavesurfer.backend.ac.decodeAudioData(audioData, function(audioBuffer) {
-			impulseResponseBuffer = audioBuffer;
-			console.log("Convolver buffer ready!");
-		}, function(e){"Error with decoding audio data" + e.err});
-	}
-	ajaxRequest.send();
+	fetch("impulse responses/3sec-1-mono_44100.wav")
+	.then(r => r.arrayBuffer())
+	.then(buffer => wavesurfer.backend.ac.decodeAudioData(buffer))
+	.then(audioBuffer => {
+		impulseResponseBuffer = audioBuffer;
+		console.log("Convolver buffer ready!");
+	})
+	.catch(e => console.log("Error with decoding audio data" + e.err));
 
 });
 
@@ -526,33 +492,5 @@ var refreshIndicators = function(time){
 	} else {
 		dbtp_display.innerHTML = "No signal";
 	}
-
-}
-
-
-var getColorOfPSRValue = function(psr_value){
-	var color;
-
-	if (psr_value < 5){
-		color = '#000000';  //black
-	} else if (psr_value < 6){
-		color = '#770000';  //dark red
-	} else if (psr_value < 7){
-		color = '#ff0000';  //red
-	} else if (psr_value < 7.5){
-		color = '#ff4500';  //orangered
-	} else if (psr_value < 8){
-		color = '#ffa500';  //orange
-	} else if (psr_value < 8.5){
-		color = '#ffc500';  //brighter orange
-	} else if (psr_value < 9.5){
-		color = '#ffff00';  //yellow
-	} else if (psr_value < 11){
-		color = '#b4ff00';  //yellow green
-	} else {
-		color = '#00ff00';  //lime green
-	}
-
-	return color;
 
 }

@@ -35,38 +35,38 @@ limitations under the License.
  * @param {function} success_callback Callback function to be called when there is a HTTP response. It gets the XMLHttpRequest object.
  * @param {array} additional_headers Array with key-value-pairs, that are used as HTTP request headers.
  * @return {Object} Returns the value of XMLHttpRequest.send()
- * @static 
- */	
+ * @static
+ */
 function postWithAJAX(url, post_data, success_callback, additional_headers){
 
 	var http = new XMLHttpRequest();
-	
+
 	http.open("POST", url, true);
-	
+
 	if (additional_headers){
-		
+
 		for (var h = 0; h < additional_headers.length; h++){
 			log("setting header: " + additional_headers[h].key + ": " + additional_headers[h].value);
 			http.setRequestHeader(additional_headers[h].key, additional_headers[h].value);
 		}
-		
+
 	}
 
 	http.onreadystatechange = function() { //Call a function when the state changes.
 
 		if (http.readyState == 4 && http.status == 200) {
-			
+
 			console.log("AJAX successful!");
-			
+
 			success_callback(http);
-			
+
 		}
 	};
-	
+
 	console.log("Sending ajax request to: " + url);
-	
+
 	return http.send(post_data);
-	
+
 }
 
 
@@ -77,29 +77,29 @@ function postWithAJAX(url, post_data, success_callback, additional_headers){
  * @param {string} url URL of the resource.
  * @param {function} success_callback Callback function to be called when resource is downloaded and ready. It gets the XMLHttpRequest object.
  * @return {mixed} http.send() Value of http.send()
- * @static 
- */	
+ * @static
+ */
 function getWithAJAX(url, success_callback){
 
 	var http = new XMLHttpRequest();
-	
+
 	http.open("GET", url, true);
 
 	http.onreadystatechange = function() { //Call a function when the state changes.
 
 		if (http.readyState == 4 && http.status == 200) {
-			
+
 			console.log("AJAX successful!");
-			
+
 			success_callback(http);
-			
+
 		}
 	};
-	
+
 	console.log("Sending ajax request to: " + url);
-	
+
 	return http.send();
-	
+
 }
 
 
@@ -109,15 +109,15 @@ function getWithAJAX(url, success_callback){
  * @param {string} url URL of the resource.
  * @param {function} success_callback Callback function to be called when resource is downloaded and ready. It gets the resource as text string.
  * @return {mixed} http.send() Value of http.send()
- * @static 
- */	
+ * @static
+ */
 function getTextWithAJAX(url, success_callback){
 
 	return getWithAJAX(url, function(http){
 		var response = http.responseText;
 		success_callback(response);
 	});
-	
+
 }
 
 
@@ -127,14 +127,14 @@ function getTextWithAJAX(url, success_callback){
  * @param {string} url URL of the resource.
  * @param {function} success_callback Callback function to be called when resource is downloaded and ready. It gets the resulting javascript object, when JSON parsing was successful.
  * @return {mixed} http.send() Value of http.send()
- * @static 
- */	
+ * @static
+ */
 function getJSONWithAJAX(url, success_callback){
-	
+
 	getTextWithAJAX(url, function(responseText){
-		parseJSON(responseText, success_callback, undefined);		
+		parseJSON(responseText, success_callback, undefined);
 	});
-	
+
 }
 
 
@@ -143,15 +143,15 @@ function getJSONWithAJAX(url, success_callback){
  * @method cloneObject
  * @param {mixed} obj Source object.
  * @return {mixed} clone Clone of the object
- * @static 
- */	
+ * @static
+ */
 function cloneObject(obj) {
     var clone = {};
-	
+
 	if (Array.isArray(obj)){
 		clone = [];
 	}
-	
+
 
     for (var i in obj) {
         if (obj[i] && typeof obj[i] == 'object') {
@@ -170,20 +170,20 @@ function cloneObject(obj) {
  * @method readFileAsText
  * @param {mixed} file File as Blob object.
  * @param {function} onsuccess Callback function to be called when file is parsed. It gets the resulting string, if parsing was successful.
- * @static 
- */	
+ * @static
+ */
 function readFileAsText(file, onsuccess){
 
 	var reader = new FileReader();
-	
+
 	reader.onload = function(e){
-		
+
 		var result = e.target.result;
-		
+
 		onsuccess(result);
-		
+
 	};
-	
+
 	reader.readAsText(file);
 
 }
@@ -196,8 +196,8 @@ function readFileAsText(file, onsuccess){
  * @param {string} string JSON string
  * @param {function} onsuccess Function to be called when JSON could be parsed. Javascript Object is passed as parameter.
  * @param {function} onerror Function to be called when JSON could not be parsed. No parameters are passed here.
- * @static 
- */	
+ * @static
+ */
 function parseJSON(string, onsuccess, onerror){
 
 	var object;
@@ -205,7 +205,7 @@ function parseJSON(string, onsuccess, onerror){
 	try {
 		object = JSON.parse(string);
 	}
-	
+
 	catch (e) {
 		log("parseJSON: String is not valid JSON");
 		if (typeof onerror == "function"){
@@ -213,7 +213,7 @@ function parseJSON(string, onsuccess, onerror){
 		}
 		return;
 	}
-	
+
 	if (typeof object == "undefined"){
 		log("parseJSON: String is not valid JSON");
 		if (typeof onerror == "function"){
@@ -221,9 +221,9 @@ function parseJSON(string, onsuccess, onerror){
 		}
 		return;
 	}
-	
+
 	onsuccess(object);
-	
+
 };
 
 
@@ -233,12 +233,12 @@ function parseJSON(string, onsuccess, onerror){
  * @param {Object} Javascript File Object to be parsed
  * @param {function} onsuccess Function to be called when JSON could be parsed. Javascript Object is passed as parameter.
  * @param {function} onerror Function to be called when JSON could not be parsed. No parameters are passed here.
- * @static 
- */	
+ * @static
+ */
 function readFileAsJSON(file, onsuccess, onerror){
 
 	readFileAsText(file, function(result){
-		parseJSON(result, onsuccess, onerror);		
+		parseJSON(result, onsuccess, onerror);
 	});
 
 }
@@ -249,25 +249,25 @@ function readFileAsJSON(file, onsuccess, onerror){
  * @method addScript
  * @param {string} url URL of the JS file
  * @param {function} onloaded Function to be called when script is loaded and ready.
- * @param {Boolean} async 
- * @static 
- */	
+ * @param {Boolean} async
+ * @static
+ */
 function addScript(url, onloaded, async){
 
 	var script = document.createElement("script");
 	script.src = url;
-	
+
 	//if async parameter is not defined, load it sync
 	script.async = async || false;
-	
+
 	console.log("adding script: " + url + ", async=" + script.async);
-	
+
 	if (onloaded){
 		script.addEventListener("load", onloaded, false);
 	}
-	
+
 	document.head.appendChild(script);
-	
+
 	script.addEventListener("load", function(){
 		console.log("script " + url + " ready!");
 	}, false);
@@ -279,8 +279,8 @@ function addScript(url, onloaded, async){
  * Loads a CSS stylesheet file from a URL and adds it dynamically to the webapp.
  * @method addStylesheet
  * @param {string} url URL of the CSS file
- * @static 
- */	
+ * @static
+ */
 function addStylesheet(filename){
 
 	var fileref = document.createElement("link");
@@ -291,7 +291,7 @@ function addStylesheet(filename){
 	if (typeof fileref != "undefined"){
 		document.getElementsByTagName("head")[0].appendChild(fileref);
 	}
-	
+
 }
 
 
@@ -299,16 +299,16 @@ function addStylesheet(filename){
  * Adds either a JS file or a CSS file to the web page. This function is a wrapper of the two functions addScript and addStylesheet
  * @method addFile
  * @param {string} filename URL of the resource
- * @static 
- */	
+ * @static
+ */
 var addFile = function(filename){
 
 	if (strings.getFileTypeFromFilename(filename) == "js"){
-		addScript(filename);	
+		addScript(filename);
 	}
-	
+
 	if (strings.getFileTypeFromFilename(filename) == "css"){
-		addStylesheet(filename);	
+		addStylesheet(filename);
 	}
 
 };
@@ -319,36 +319,36 @@ var addFile = function(filename){
  * @method addFiles
  * @param {Mixed} string_or_array String or array of strings with URL(s) of the resource(s)
  * @param {String} url_prefix Prefix which is added to each passed URL
- * @static 
- */	
+ * @static
+ */
 var addFiles = function(string_or_array, url_prefix){
 
 	if (typeof string_or_array == "string"){
-		
+
 		if (url_prefix){
 			string_or_array = url_prefix + string_or_array;
 		}
-		
+
 		addFile(string_or_array);
-		
+
 		return;
 	}
-	
+
 	if (Array.isArray(string_or_array)){
-		
+
 		forEach(string_or_array, function(file){
-		
+
 			if (url_prefix){
 				file = url_prefix + file;
 			}
-		
+
 			addFile(file);
-			
+
 		});
-		
+
 		return;
-		
-	}	
+
+	}
 
 };
 
@@ -360,17 +360,17 @@ var addFiles = function(string_or_array, url_prefix){
  * @param {String} key Key in object
  * @param {String} value Value of key in object
  * @return {Mixed} Returns index as number or undefined, if there is no such object.
- * @static 
- */	
+ * @static
+ */
 var getIndex = function(array, key, value){
 
 	for (var i=0; i < array.length; i++){
-		
+
 		if (array[i][key] == value){
 			return i;
 		}
 	}
-	
+
 	return undefined;
 
 };
@@ -382,8 +382,8 @@ var getIndex = function(array, key, value){
  * @param {Array} array Array of Javascript Objects
  * @param {String} id Value of ID
  * @return {Mixed} Returns index as number or undefined, if there is no such object.
- * @static 
- */	
+ * @static
+ */
 var getIndexByID = function(array, id){
 
 	return getIndex(array, "id", id);
@@ -398,17 +398,17 @@ var getIndexByID = function(array, id){
  * @param {String} key Key in object
  * @param {String} value Value of key in object
  * @return {Mixed} Returns an object or undefined, if there is no such object.
- * @static 
- */	
+ * @static
+ */
 var getObject = function(array, key, value){
 
 	for (var i=0; i < array.length; i++){
-		
+
 		if (array[i][key] == value){
 			return array[i];
 		}
 	}
-	
+
 	return undefined;
 
 };
@@ -420,8 +420,8 @@ var getObject = function(array, key, value){
  * @param {Array} array Array of Javascript Objects
  * @param {String} id Value of ID
  * @return {Mixed} Returns an object or undefined, if there is no such object.
- * @static 
- */	
+ * @static
+ */
 var getObjectByID = function(array, id){
 
 	return getObject(array, "id", id);
@@ -434,24 +434,24 @@ var getObjectByID = function(array, id){
  * @method forAllItems
  * @param {Array} array Any array
  * @param {Function} action Action that is performed on each item.
- * @static 
- */	
+ * @static
+ */
 var forAllItems = function(array, action){
 
 	var i = array.length;
 
 	for (;;){
-	
+
 		if (i !== 0) {
 			i = i - 1;
 		}
-		
+
 		else {
 			return;
 		}
-	
+
 		action(array[i]);
-	
+
 	}
 
 };
@@ -463,16 +463,16 @@ var forAllItems = function(array, action){
  * @method maps
  * @param {Array} array Any array
  * @param {Function} transform Transformation method that is performed on each item
- * @return {Array} Returns the resulting array of the map. 
- * @static 
- */	
+ * @return {Array} Returns the resulting array of the map.
+ * @static
+ */
 var map = function(array, transform) {
 	var mapped = [];
-	
+
 	for (var i = 0; i < array.length; i++){
 		mapped.push(transform(array[i]));
 	}
-	
+
 	return mapped;
 };
 
@@ -483,8 +483,8 @@ var map = function(array, transform) {
  * @param {Array} array Any array
  * @param {String} key Key, of which the value is taken.
  * @return {Array} Array with values.
- * @static 
- */	
+ * @static
+ */
 var getArrayWithValuesByKey = function(array, key){
 
 	var new_array = map(array, function(item){
@@ -501,8 +501,8 @@ var getArrayWithValuesByKey = function(array, key){
  * @method getArrayWithIDs
  * @param {Array} array Any array
  * @return {Array} Array with IDs
- * @static 
- */	
+ * @static
+ */
 var getArrayWithIDs = function(array){
 
 	return getArrayWithValuesByKey(array, "id");
@@ -516,8 +516,8 @@ var getArrayWithIDs = function(array){
  * @param {Array} array Any array
  * @param {Function} test Test function that is called for every array item. Array item is passed. If the function returns true, the item will appear in the array that is returned.
  * @return {Array} Filtered array
- * @static 
- */	
+ * @static
+ */
 var filter = function(array, test) {
 	var passed = [];
 	for (var i = 0; i < array.length; i++) {
@@ -525,9 +525,9 @@ var filter = function(array, test) {
 			passed.push(array[i]);
 		}
 	}
-	
+
 	return passed;
-	
+
 };
 
 
@@ -542,17 +542,17 @@ var forEach = function(array, action) {
 var getSelectedRadioIndex = function (radios){
 
 	for (var r = 0; r < radios.length; r++){
-		
+
 		if (radios[r].checked === true){
-			
+
 			return r;
-			
+
 		}
-		
+
 	}
-	
+
 	return 0;
-	
+
 };
 
 
@@ -565,76 +565,76 @@ var log = function(item){
 
 //this method is also in dom, but has to be here too to avoid circular dependencies
 var getSelectedRadioValue = function (radios){
-	
+
 	if (typeof radios == "string"){
-		
+
 		radios = document.getElementsByName(radios);
-		
+
 	}
-	
+
 	return radios[getSelectedRadioIndex(radios)].value;
-	
+
 };
 
 
 function get(name){
 
 	var elem = document.getElementsByName(name);
-	
+
 	if (elem[0] && elem[0].nodeName == "INPUT" && elem[0].type == "radio"){
 		return getSelectedRadioValue(elem);
 	}
-	
+
 	elem = elem[0];
-	
+
 	if (typeof elem == "undefined"){
-	
+
 		elem = g(name);
-	
+
 	}
-	
+
 	if (typeof elem == "undefined"){
-	
+
 		console.error("get: Element " + name + " is undefined!");
 		return;
-	
-	}	
-	
+
+	}
+
 	switch (elem.nodeName){
-	
+
 		case "INPUT": return elem.value;
-	
+
 		case "TEXTAREA": return elem.value;
-	
+
 		case "SELECT": {
-			
+
 			if (elem.selectedIndex != -1){
 				return elem.options[elem.selectedIndex].value;
 			}
-			
+
 			else {
 				return "";
 			}
-			
+
 			break;
 		}
-		
+
 		default: console.log("Function \"get\" has been misused with a " + elem.nodeName + " element. This should not have happened!");
-	
+
 	}
 }
 
 
 var g = function (id){
-	
+
 	if (document.getElementById(id)){
 		return document.getElementById(id);
 	}
-	
+
 	if (document.getElementsByName(id).length > 0){
 		return document.getElementsByName(id);
 	}
-	
+
 	return undefined;
 
 };
@@ -669,21 +669,21 @@ function o(object, property_array){
 //returns value of object properties if they exist, if not returns ""
 
 	var value = object;
-	
+
 	for (var p=0; p<property_array.length; p++){
-	
-	
+
+
 		if (property_array[p] in value){
 			value = value[property_array[p]];
-		
+
 		}
-		
-		else { 
+
+		else {
 			return "";
 		}
 
 	}
-	
+
 	return value;
 
 }
@@ -696,7 +696,7 @@ function a(array,index){
 	for (var i=0;i<array.length;i++){
 
 		list.push(array[i][index]);
-	
+
 	}
 
 	return list;
@@ -711,7 +711,7 @@ function sortBySubKey(array,keys){
         var y = b[keys[0]][keys[1]];
 
         if (typeof x == "string"){
-            x = x.toLowerCase(); 
+            x = x.toLowerCase();
             y = y.toLowerCase();
         }
 
@@ -729,10 +729,34 @@ function sortByKey(array, key) {
         var y = b[key];
 
         if (typeof x == "string"){
-            x = x.toLowerCase(); 
+            x = x.toLowerCase();
             y = y.toLowerCase();
         }
 
         return ((x < y) ? -1 : ((x > y) ? 1 : 0));
     });
+}
+
+
+function getMaxOfArray(numArray) {
+	// returning Math.max.apply(null, numArray);
+	// will result in "Uncaught RangeError: Maximum call stack size exceeded"
+	var max_pos = 0;
+	for (var i = 1; i < numArray.length; i++){
+		if (numArray[i] > numArray[max_pos]){
+			max_pos = i;
+		}
+	}
+	return numArray[max_pos];
+}
+
+
+function getMinOfArray(numArray) {
+	var min_pos = 0;
+	for (var i = 1; i < numArray.length; i++){
+		if (numArray[i] < numArray[min_pos]){
+			min_pos = i;
+		}
+	}
+	return numArray[min_pos];
 }
