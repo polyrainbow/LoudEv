@@ -311,7 +311,11 @@ var drawConclusion = function(psr){
 		}
 	}
 
-	var min_psr = getMinOfArray(psr.filter(val => !isNaN(val)));
+	var psrs_of_bins_with_high_true_peak = psr
+	.filter((psr, i) => true_peak[i] >= -7)
+	.filter(val => !isNaN(val));
+
+	var min_psr = getMinOfArray(psrs_of_bins_with_high_true_peak);
 
 	var median = sum / count;
 
@@ -337,6 +341,7 @@ var drawConclusion = function(psr){
 		},
 		{
 			"label": "Minimum peak to short term loudness ratio (PSR)",
+			"subtitle": "where true peak is above -7 dbTP",
 			"value": min_psr,
 			"unit": "LU",
 			"assessment": ASSESS.minPSR(min_psr)
@@ -361,6 +366,10 @@ var drawConclusion = function(psr){
 
 		var td = document.createElement("td");
 		td.innerHTML = stat.label;
+
+		stat.subtitle && (td.innerHTML +=
+		`<br><span style="font-size: small">${stat.subtitle}</span>`);
+
 		tr.appendChild(td);
 
 		td = document.createElement("td");
