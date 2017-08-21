@@ -213,6 +213,7 @@ function startComputations(wavesurfer){
 				drawLoudnessDiagram(loudness);
 				drawPSRDiagram(psr);
 				drawConclusion(psr);
+				g("meters_div").style.display = "block";
 				wavesurfer.play();
 			}
 			if (data.type == "progress"){
